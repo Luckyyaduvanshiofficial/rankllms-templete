@@ -1,0 +1,211 @@
+---
+import MarketingLayout from './MarketingLayout.astro';
+import { Icon } from 'astro-icon/components';
+import { calculateReadingTime, formatDate } from '@/lib/utils';
+import { siteConfig } from '@/config';
+
+interface Props {
+  title: string;
+  description: string;
+  publishedDate: Date;
+  author: string;
+  image?: string;
+  tags?: string[];
+  content: string;
+  headings?: { depth: number; slug: string; text: string }[];
+}
+
+const { title, description, publishedDate, author, image, tags = [], content, headings = [] } = Astro.props;
+
+const readingTime = calculateReadingTime(content);
+const formattedDate = formatDate(publishedDate, {
+  year: 'numeric',
+  month: 'long',
+  day: 'numeric',
+});
+
+// Filter headings to only include h2 and h3
+const tocHeadings = headings.filter(h => h.depth === 2 || h.depth === 3);
+---
+
+<MarketingLayout
+  title={title}
+  description={description}
+  image={image}
+  type="article"
+  publishedDate={publishedDate}
+  author={author}
+  tags={tags}
+>
+  <article class="py-section">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-col lg:flex-row gap-12">
+        <!-- Main Content Column -->
+        <div class="flex-1 lg:max-w-[800px] xl:max-w-[900px] mx-auto w-full">
+          <!-- Article Header -->
+          <header class="mb-12">
+            <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-text mb-6 leading-tight text-balance py-2">
+              {title}
+            </h1>
+            <p class="text-lg sm:text-xl text-text-muted mb-8 leading-relaxed text-pretty">
+              {description}
+            </p>
+
+            <!-- Article Metadata & Author Tab (EEAT) -->
+            <div class="flex flex-wrap items-center justify-between gap-4 text-sm text-text-muted border-y border-border py-6">
+              <div class="flex flex-wrap items-center gap-6">
+                <span class="flex items-center gap-2">
+                  <Icon name="lucide:user" class="w-4 h-4 text-primary" />
+                  <span class="font-medium">{author}</span>
+                </span>
+                <span class="flex items-center gap-2">
+                  <Icon name="lucide:calendar" class="w-4 h-4 text-primary" />
+                  {formattedDate}
+                </span>
+                <span class="flex items-center gap-2">
+                  <Icon name="lucide:clock" class="w-4 h-4 text-primary" />
+                  {readingTime} min read
+                </span>
+              </div>
+              
+              <!-- Tags -->
+              {tags.length > 0 && (
+                <div class="flex gap-2">
+                  {tags.map((tag) => (
+                    <span class="px-3 py-1 bg-surface border border-border text-text rounded-full text-xs font-semibold">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {image && (
+              <div class="mt-8 rounded-xl overflow-hidden shadow-lg border border-border">
+                <img src={image} alt={title} class="w-full h-auto object-cover object-center max-h-[500px]" />
+              </div>
+            )}
+          </header>
+
+          <!-- Mobile Table of Contents -->
+          {tocHeadings.length > 0 && (
+            <details class="block lg:hidden mb-10 rounded-xl border border-border bg-surface shadow-sm overflow-hidden group">
+              <summary class="font-bold text-text p-5 flex items-center justify-between cursor-pointer list-none hover:bg-primary/5 transition-colors">
+                <div class="flex items-center gap-3">
+                  <Icon name="lucide:list" class="w-5 h-5 text-primary" />
+                  Table of Contents
+                </div>
+                <Icon name="lucide:chevron-down" class="w-5 h-5 text-text-muted group-open:rotate-180 transition-transform" />
+              </summary>
+              <div class="p-5 pt-2 bg-surface">
+                <nav class="toc-mobile">
+                  <ul class="space-y-3 text-sm">
+                    {tocHeadings.map((heading) => (
+                      <li class={heading.depth === 3 ? "ml-4 border-l-2 border-border pl-4" : ""}>
+                        <a
+                          href={`#${heading.slug}`}
+                          class="block text-text-muted hover:text-primary transition-colors"
+                        >
+                          {heading.text}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </nav>
+              </div>
+            </details>
+          )}
+
+          <!-- Article Content -->
+          <main class="min-w-0 prose max-w-none prose-lg dark:prose-invert prose-h2:text-2xl prose-h2:font-bold prose-h3:text-xl prose-h3:font-semibold prose-h4:text-lg prose-h4:font-semibold prose-a:text-primary hover:prose-a:text-primary/80 prose-img:rounded-2xl prose-strong:text-transparent prose-strong:bg-clip-text prose-strong:bg-gradient-to-r prose-strong:from-primary prose-strong:via-purple-500 prose-strong:to-indigo-500 prose-strong:font-bold">
+            <slot name="content" />
+          </main>
+
+          <!-- Extended EEAT Author Block -->
+          <aside class="mt-16 p-8 rounded-2xl bg-gradient-to-br from-surface to-background border border-border shadow-sm flex flex-col md:flex-row items-center md:items-start gap-8 text-center md:text-left">
+            <div class="w-24 h-24 rounded-full overflow-hidden bg-primary/10 shrink-0 border-4 border-surface shadow-md flex items-center justify-center">
+              <Icon name="lucide:user" class="w-12 h-12 text-primary" />
+            </div>
+            <div class="flex-1">
+              <h4 class="text-xs uppercase tracking-widest font-bold text-primary mb-1">Written By</h4>
+              <h3 class="text-2xl font-extrabold text-text mb-3">{author}</h3>
+              <p class="text-text-muted leading-relaxed text-pretty">
+                Editor and Content Specialist at {siteConfig.name}. Exploring the latest trends in technology, software engineering, and the digital ecosystem.
+              </p>
+            </div>
+          </aside>
+
+          <slot />
+        </div>
+
+        <!-- Right Sidebar (Sticky TOC) -->
+        <aside class="hidden lg:block w-72 xl:w-80 shrink-0 relative">
+          <div class="sticky top-24">
+            <div class="rounded-xl border border-border bg-surface p-6 shadow-sm flex flex-col max-h-[calc(100vh-8rem)]">
+              <h3 class="font-bold text-text mb-4 text-sm uppercase tracking-wider flex items-center gap-2 pb-4 border-b border-border shrink-0">
+                <Icon name="lucide:list" class="w-4 h-4 text-primary" />
+                Table of Contents
+              </h3>
+              {tocHeadings.length > 0 ? (
+                <nav class="toc overflow-y-auto pr-2 -mr-2">
+                  <ul class="space-y-3 text-sm">
+                    {tocHeadings.map((heading) => (
+                      <li class={heading.depth === 3 ? "ml-4 border-l-2 border-border pl-4" : ""}>
+                        <a
+                          href={`#${heading.slug}`}
+                          class="block text-text-muted hover:text-primary transition-colors leading-relaxed"
+                        >
+                          {heading.text}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                </nav>
+              ) : (
+                <p class="text-sm text-text-muted italic">No headings found.</p>
+              )}
+
+              <div class="mt-8 pt-6 border-t border-border shrink-0">
+                <a href="/leaderboards/top-10" class="group flex items-center justify-between p-3 rounded-lg hover:bg-primary/5 transition-colors border border-transparent hover:border-primary/20">
+                  <div class="flex flex-col gap-1">
+                    <span class="text-xs font-bold uppercase tracking-wider text-text-muted">Explore</span>
+                    <span class="font-semibold text-primary text-sm">
+                      Top 10 LLMs Leaderboard
+                    </span>
+                  </div>
+                  <Icon name="lucide:arrow-right" class="w-4 h-4 text-primary group-hover:translate-x-1 transition-transform" />
+                </a>
+              </div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </article>
+</MarketingLayout>
+
+<script>
+  // Simple active state observer for TOC
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        document.querySelectorAll('.toc a, .toc-mobile a').forEach(a => {
+          if (a.getAttribute('href') === '#' + entry.target.id) {
+            a.classList.add('text-primary', 'font-medium');
+            a.classList.remove('text-text-muted');
+          } else {
+            a.classList.remove('text-primary', 'font-medium');
+            a.classList.add('text-text-muted');
+          }
+        });
+      }
+    });
+  }, { rootMargin: '-10% 0px -80% 0px' });
+
+  // Delay slightly to let headings render
+  setTimeout(() => {
+    document.querySelectorAll('h2[id], h3[id]').forEach((section) => {
+      observer.observe(section);
+    });
+  }, 100);
+</script>

@@ -1,0 +1,71 @@
+---
+import MarketingLayout from '../../layouts/MarketingLayout.astro';
+import DataTable from '../../components/dashboard-ui/DataTable.astro';
+import { getModelsByCategory, CATEGORY_TITLES } from '../../services/models';
+import type { CategorySlug } from '../../types/database';
+
+export function getStaticPaths() {
+  return [
+    { params: { category: 'top-10' } },
+    { params: { category: 'top-50' } },
+    { params: { category: 'coding' } },
+    { params: { category: 'offline' } },
+    { params: { category: 'tool-use' } },
+    { params: { category: 'swe' } },
+    { params: { category: 'reasoning' } },
+    { params: { category: 'massive-context' } },
+    { params: { category: 'cost-effective' } },
+    { params: { category: 'ultra-budget' } },
+    { params: { category: 'new-trending' } },
+    { params: { category: 'enterprise' } },
+  ];
+}
+
+const { category } = Astro.params;
+const models = await getModelsByCategory(category as CategorySlug);
+const title = CATEGORY_TITLES[category as CategorySlug] || 'Leaderboard';
+
+// Map our database fields to match what DataTable expects
+const tableData = models.map(model => ({
+  rank: model.rank,
+  company: model.company,
+  model: model.model,
+  score: model.code_arena || model.chat_arena || model.gpqa || model.swe_bench || '-', // Show the relevant score
+  license: model.license,
+  price: model.input_price_per_million ? `$${model.input_price_per_million}` : 'Free/Unknown'
+}));
+
+const columns = [
+  { key: 'rank', label: 'Rank', sortable: true },
+  { key: 'model', label: 'Model Name', sortable: true },
+  { key: 'company', label: 'Company', sortable: true },
+  { key: 'score', label: 'Score', sortable: true },
+  { key: 'license', label: 'License', sortable: true },
+  { key: 'price', label: 'Input Price (per 1M)', sortable: true },
+];
+
+const description = `View the ${title} on RankLLMs to find the best language models for your use case.`;
+---
+
+<MarketingLayout title={`${title} | RankLLMs`} description={description}>
+  <div class="px-4 sm:px-6 lg:px-8 py-12 w-full max-w-7xl mx-auto">
+    <div class="mb-8 text-center">
+      <h1 class="text-3xl md:text-5xl text-slate-900 font-extrabold mb-4">{title} ✨</h1>
+      <p class="text-lg text-slate-600 max-w-3xl mx-auto">{description}</p>
+    </div>
+
+    <!-- The built in DataTable component from the template -->
+    <div class="bg-white shadow-xl rounded-xl border border-slate-200 overflow-hidden">
+      <header class="px-6 py-5 border-b border-slate-100 bg-slate-50">
+        <h2 class="font-bold text-slate-800 text-lg">Models <span class="text-slate-500 font-medium text-sm ml-1">({models.length})</span></h2>
+      </header>
+      <div class="p-4">
+        <DataTable 
+          columns={columns} 
+          data={tableData} 
+          emptyMessage="No models found for this category."
+        />
+      </div>
+    </div>
+  </div>
+</MarketingLayout>

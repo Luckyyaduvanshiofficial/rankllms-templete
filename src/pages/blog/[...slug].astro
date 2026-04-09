@@ -1,0 +1,119 @@
+---
+import BlogLayout from '@/layouts/BlogLayout.astro';
+import { getCollection, render, type CollectionEntry } from 'astro:content';
+import { calculateReadingTime } from '@/lib/utils';
+import { getBlogPosts } from '@/lib/strapi';
+import InlineModelCard from '@/components/mdx/InlineModelCard.astro';
+
+type BlogPost = CollectionEntry<'blog'>;
+
+export async function getStaticPaths() {
+  const posts = await getBlogPosts();
+  return posts.map((post: BlogPost) => ({
+    params: { slug: post.slug },
+    props: { post },
+  }));
+}
+
+interface Props {
+  post: BlogPost;
+}
+
+const { post } = Astro.props;
+const { Content, headings } = post.collection 
+  ? await render(post) 
+  : { 
+      // Minimal faux-render object if data comes fresh out of a Headless CMS   
+      Content: () => post.body, 
+      headings: [] 
+    };
+
+// Get related posts based on shared tags
+const allPosts = await getBlogPosts();
+  post: BlogPost;
+  sharedTags: number;
+}
+
+const relatedPosts: BlogPost[] = allPosts
+  .filter((p: BlogPost) => p.id !== post.id)
+  .map(
+    (p: BlogPost): RelatedPostWithScore => ({
+      post: p,
+      sharedTags: p.data.tags.filter((tag: string) => post.data.tags.includes(tag)).length,
+    })
+  )
+  .filter((p: RelatedPostWithScore) => p.sharedTags > 0)
+  .sort((a: RelatedPostWithScore, b: RelatedPostWithScore) => {
+    if (b.sharedTags !== a.sharedTags) {
+      return b.sharedTags - a.sharedTags;
+    }
+    return b.post.data.publishedDate.getTime() - a.post.data.publishedDate.getTime();
+  })
+  .slice(0, 3)
+  .map((p: RelatedPostWithScore) => p.post);
+---
+
+<BlogLayout
+  title={post.data.title}
+  description={post.data.description}
+  publishedDate={post.data.publishedDate}
+  author={post.data.author}
+  image={post.data.image}
+  tags={post.data.tags}
+  content={post.body || ''}
+  headings={headings}
+>
+<div slot="content">
+    <Content components={{ InlineModelCard }} />
+  </div>
+
+  <!-- Related Posts -->
+  {
+    relatedPosts.length > 0 && (
+      <aside class="mt-16 pt-12 border-t border-border">
+        <h2 class="text-2xl font-bold text-text mb-8">Related Posts</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {relatedPosts.map((relatedPost) => (
+            <a href={`/blog/${relatedPost.id}`} class="group block h-full">
+              <article class="h-full rounded-xl overflow-hidden border border-border hover:border-primary/50 hover:shadow-lg transition-all bg-surface/50 flex flex-col">
+                <div class="h-48 w-full bg-surface relative overflow-hidden">
+                  {relatedPost.data.image ? (
+                    <img
+                      src={relatedPost.data.image}
+                      alt={relatedPost.data.title}
+                      class="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div class="w-full h-full bg-primary/5 flex items-center justify-center"></div>
+                  )}
+                </div>
+                <div class="p-6 flex-1 flex flex-col">
+                  {relatedPost.data.tags && relatedPost.data.tags.length > 0 && (
+                    <div class="text-xs font-medium text-primary mb-3">
+                      {relatedPost.data.tags[0]}
+                    </div>
+                  )}
+                  <h3 class="font-bold text-lg text-text group-hover:text-primary transition-colors line-clamp-2 mb-2">
+                    {relatedPost.data.title}
+                  </h3>
+                  <p class="mt-2 text-sm text-text-muted mt-auto line-clamp-2 mb-4">
+                    {relatedPost.data.description}
+                  </p>
+                  <div class="flex items-center text-xs text-text-muted font-medium pt-4 border-t border-border/50">
+                    {relatedPost.data.publishedDate.toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                    <span class="mx-2">·</span>
+                    {calculateReadingTime(relatedPost.body || '')} min read
+                  </div>
+                </div>
+              </article>
+            </a>
+          ))}
+        </div>
+      </aside>
+    )
+  }
+</BlogLayout>
