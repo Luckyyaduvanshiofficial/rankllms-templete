@@ -65,10 +65,22 @@ const primaryCTA = headerNav.cta.find((cta) => cta.variant === 'primary');
       <!-- Desktop Actions - Right -->
       <div class="hidden md:flex items-center gap-4">
         <label class="relative block w-48 text-text-muted">
-          <Icon name="lucide:search" class="absolute pointer-events-none left-3 top-1/2 -translate-y-1/2 h-4 w-4" />
+          <Icon
+            name="lucide:search"
+            class="absolute pointer-events-none left-3 top-1/2 -translate-y-1/2 h-4 w-4"
+          />
           <!-- Pagefind sets up its own input when given this ID/Class. If you want to use the default modal styling, use the <Search id="search"/> directly. Here we invoke the built-in Pagefind Search. -->
           <div class="pagefind-container">
-            <Search id="search" className="pagefind-ui" uiOptions={{ showImages: false, showIntro: false, resetStyles: false, showSubResults: true }} />
+            <Search
+              id="search"
+              className="pagefind-ui"
+              uiOptions={{
+                showImages: false,
+                showIntro: false,
+                resetStyles: false,
+                showSubResults: true,
+              }}
+            />
           </div>
         </label>
         <ThemeToggle />

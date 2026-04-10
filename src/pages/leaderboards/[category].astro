@@ -26,13 +26,13 @@ const models = await getModelsByCategory(category as CategorySlug);
 const title = CATEGORY_TITLES[category as CategorySlug] || 'Leaderboard';
 
 // Map our database fields to match what DataTable expects
-const tableData = models.map(model => ({
+const tableData = models.map((model) => ({
   rank: model.rank,
   company: model.company,
   model: model.model,
-  score: model.code_arena || model.chat_arena || model.gpqa || model.swe_bench || '-', // Show the relevant score
+  score: model.code_arena ?? model.chat_arena ?? model.gpqa ?? model.swe_bench ?? '-', // Show the relevant score
   license: model.license,
-  price: model.input_price_per_million ? `$${model.input_price_per_million}` : 'Free/Unknown'
+  price: model.input_price_per_million ? `$${model.input_price_per_million}` : 'Free/Unknown',
 }));
 
 const columns = [
@@ -57,12 +57,14 @@ const description = `View the ${title} on RankLLMs to find the best language mod
     <!-- The built in DataTable component from the template -->
     <div class="bg-white shadow-xl rounded-xl border border-slate-200 overflow-hidden">
       <header class="px-6 py-5 border-b border-slate-100 bg-slate-50">
-        <h2 class="font-bold text-slate-800 text-lg">Models <span class="text-slate-500 font-medium text-sm ml-1">({models.length})</span></h2>
+        <h2 class="font-bold text-slate-800 text-lg">
+          Models <span class="text-slate-500 font-medium text-sm ml-1">({models.length})</span>
+        </h2>
       </header>
       <div class="p-4">
-        <DataTable 
-          columns={columns} 
-          data={tableData} 
+        <DataTable
+          columns={columns}
+          data={tableData}
           emptyMessage="No models found for this category."
         />
       </div>

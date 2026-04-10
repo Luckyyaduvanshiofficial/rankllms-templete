@@ -1,16 +1,17 @@
 ---
 import BlogLayout from '@/layouts/BlogLayout.astro';
-import { getCollection, render, type CollectionEntry } from 'astro:content';
+import { render, type CollectionEntry } from 'astro:content';
 import { calculateReadingTime } from '@/lib/utils';
 import { getBlogPosts } from '@/lib/strapi';
 import InlineModelCard from '@/components/mdx/InlineModelCard.astro';
+import OptimizedImage from '@components/common/OptimizedImage.astro';
 
 type BlogPost = CollectionEntry<'blog'>;
 
 export async function getStaticPaths() {
   const posts = await getBlogPosts();
   return posts.map((post: BlogPost) => ({
-    params: { slug: post.slug },
+    params: { slug: post.id },
     props: { post },
   }));
 }
@@ -20,16 +21,13 @@ interface Props {
 }
 
 const { post } = Astro.props;
-const { Content, headings } = post.collection 
-  ? await render(post) 
-  : { 
-      // Minimal faux-render object if data comes fresh out of a Headless CMS   
-      Content: () => post.body, 
-      headings: [] 
-    };
+const renderResult = post.collection ? await render(post) : null;
+const { Content, headings } = renderResult || { Content: null, headings: [] };
 
 // Get related posts based on shared tags
 const allPosts = await getBlogPosts();
+
+interface RelatedPostWithScore {
   post: BlogPost;
   sharedTags: number;
 }
@@ -63,8 +61,12 @@ const relatedPosts: BlogPost[] = allPosts
   content={post.body || ''}
   headings={headings}
 >
-<div slot="content">
-    <Content components={{ InlineModelCard }} />
+  <div slot="content">
+    {Content ? (
+      <Content components={{ InlineModelCard }} />
+    ) : (
+      <div set:html={post.body} />
+    )}
   </div>
 
   <!-- Related Posts -->
@@ -78,13 +80,16 @@ const relatedPosts: BlogPost[] = allPosts
               <article class="h-full rounded-xl overflow-hidden border border-border hover:border-primary/50 hover:shadow-lg transition-all bg-surface/50 flex flex-col">
                 <div class="h-48 w-full bg-surface relative overflow-hidden">
                   {relatedPost.data.image ? (
-                    <img
+                    <OptimizedImage
                       src={relatedPost.data.image}
                       alt={relatedPost.data.title}
+                      width={1200}
+                      height={800}
                       class="w-full h-full object-cover"
+                      loading="lazy"
                     />
                   ) : (
-                    <div class="w-full h-full bg-primary/5 flex items-center justify-center"></div>
+                    <div class="w-full h-full bg-primary/5 flex items-center justify-center" />
                   )}
                 </div>
                 <div class="p-6 flex-1 flex flex-col">
@@ -96,7 +101,7 @@ const relatedPosts: BlogPost[] = allPosts
                   <h3 class="font-bold text-lg text-text group-hover:text-primary transition-colors line-clamp-2 mb-2">
                     {relatedPost.data.title}
                   </h3>
-                  <p class="mt-2 text-sm text-text-muted mt-auto line-clamp-2 mb-4">
+                  <p class="text-sm text-text-muted mt-auto line-clamp-2 mb-4">
                     {relatedPost.data.description}
                   </p>
                   <div class="flex items-center text-xs text-text-muted font-medium pt-4 border-t border-border/50">

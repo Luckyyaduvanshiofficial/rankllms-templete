@@ -9,9 +9,7 @@ export const navigation: Navigation = {
       { label: 'Cost Effective', href: '/leaderboards/cost-effective' },
       { label: 'Blog', href: '/blog', feature: 'blog' },
     ],
-    cta: [
-      { label: 'Browse 300+ Models', href: '/leaderboards/top-50', variant: 'primary' },
-    ],
+    cta: [{ label: 'Browse 300+ Models', href: '/leaderboards/top-50', variant: 'primary' }],
   },
   footer: {
     product: [

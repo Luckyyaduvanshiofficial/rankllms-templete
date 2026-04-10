@@ -14,7 +14,7 @@ export interface AiModel {
   license: string | null;
 }
 
-export type CategorySlug = 
+export type CategorySlug =
   | 'top-10'
   | 'top-50'
   | 'coding'

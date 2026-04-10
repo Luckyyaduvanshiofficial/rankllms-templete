@@ -1,17 +1,32 @@
 ---
 import MarketingLayout from '@/layouts/MarketingLayout.astro';
 import { Icon } from 'astro-icon/components';
-import { getCollection, type CollectionEntry } from 'astro:content';
+import { type CollectionEntry } from 'astro:content';
 import { siteConfig } from '@/config';
+import { calculateReadingTime, slugifyTag } from '@/lib/utils';
+import { getBlogPosts } from '@/lib/strapi';
+import OptimizedImage from '@components/common/OptimizedImage.astro';
 
 type BlogPost = CollectionEntry<'blog'>;
 
 export async function getStaticPaths() {
-  const posts = await getCollection('blog', ({ data }: { data: BlogPost['data'] }) => !data.draft);
-  const allTags = [...new Set(posts.flatMap((post: BlogPost) => post.data.tags))];
+  const allPosts = await getBlogPosts();
 
-  return allTags.map((tag) => ({
-    params: { tag },
+  // 3 Months Ago Target Date
+  const threeMonthsAgo = new Date();
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+  // Automatically remove "News" articles older than 3 months from main feed
+  const posts = allPosts.filter((post: BlogPost) => {
+    const isNews = post.data.tags?.some((tag: string) => tag.toLowerCase() === 'news');
+    const isOlderThan3Months = post.data.publishedDate < threeMonthsAgo;
+    return !(isNews && isOlderThan3Months);
+  });
+  
+  const allTags = [...new Set(posts.flatMap((post: BlogPost) => post.data.tags || []))];
+
+  return allTags.map((tag: string) => ({
+    params: { tag: slugifyTag(tag) },
     props: { tag },
   }));
 }
@@ -21,141 +36,230 @@ interface Props {
 }
 
 const { tag } = Astro.props;
+const tagSlug = Astro.params.tag;
 
-const posts = await getCollection('blog', ({ data }: { data: BlogPost['data'] }) => !data.draft);
+// Fetch and filter posts at module level for this specific tag
+const allPosts = await getBlogPosts();
+
+const threeMonthsAgo = new Date();
+threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+const posts: BlogPost[] = allPosts.filter((post: BlogPost) => {
+  const isNews = post.data.tags?.some((postTag: string) => postTag.toLowerCase() === 'news');
+  const isOlderThan3Months = post.data.publishedDate < threeMonthsAgo;
+  return !(isNews && isOlderThan3Months);
+});
+
 const filteredPosts: BlogPost[] = posts
-  .filter((post: BlogPost) => post.data.tags.includes(tag))
+  .filter((post: BlogPost) =>
+    post.data.tags?.some((postTag: string) => slugifyTag(postTag) === tagSlug)
+  )
   .sort(
     (a: BlogPost, b: BlogPost) => b.data.publishedDate.getTime() - a.data.publishedDate.getTime()
   );
 
 // Get all unique tags for the filter
-const allTags = [...new Set(posts.flatMap((post: BlogPost) => post.data.tags))].sort();
+const allTags: string[] = [...new Set(posts.flatMap((post: BlogPost) => post.data.tags || []))].sort();
 
-function calculateReadingTime(text: string): number {
-  const wordCount = text.trim().split(/\s+/).length;
-  return Math.ceil(wordCount / 200);
-}
-
-// Helper to get typed tags with comparison
-const getTypedTagsWithActive = (tags: string[], activeTag: string) =>
-  tags.slice(0, 3).map((t) => ({ tag: t, isActive: t === activeTag }));
+const featuredPost = filteredPosts[0];
+const regularPosts = filteredPosts.slice(1);
 ---
 
 <MarketingLayout
   title={`Posts tagged "${tag}"`}
   description={`Browse all blog posts tagged with "${tag}" on the ${siteConfig.name} blog.`}
 >
-  <section class="py-section">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-12">
-        <a href="/blog" class="text-primary hover:underline text-sm font-medium">
-          ← Back to all posts
+  <section class="relative py-20 overflow-hidden bg-background">
+    <!-- Ambient Background Mesh -->
+    <div
+      class="absolute top-0 left-1/2 -translate-x-1/2 w-200 h-100 bg-primary/20 blur-[120px] rounded-full pointer-events-none opacity-50"
+    >
+    </div>
+    <div
+      class="absolute -top-20 -right-20 w-100 h-100 bg-purple-500/10 blur-[100px] rounded-full pointer-events-none opacity-50"
+    >
+    </div>
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      {/* Header section */}
+      <div class="text-center mb-16 max-w-3xl mx-auto space-y-4">
+        <a
+          href="/blog"
+          class="inline-flex items-center gap-2 text-primary hover:underline text-sm font-bold uppercase tracking-wider mb-6 transition-colors hover:text-text"
+        >
+          <Icon name="lucide:arrow-left" class="w-4 h-4" />
+          Back to all posts
         </a>
-        <h1 class="text-4xl sm:text-5xl font-bold text-text mt-4">
-          Posts tagged "{tag}"
+        <h1 class="text-5xl md:text-6xl font-serif text-text tracking-tight pb-2 font-bold">
+          {tag}
         </h1>
-        <p class="mt-4 text-lg text-text-muted">
+        <p class="text-lg md:text-xl text-text-muted leading-relaxed text-pretty">
           {filteredPosts.length}
-          {filteredPosts.length === 1 ? 'post' : 'posts'} found
+          {filteredPosts.length === 1 ? 'post' : 'posts'} found in this category.
         </p>
       </div>
 
-      <!-- Tags Filter -->
-      {
-        allTags.length > 0 && (
-          <div class="mb-10">
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="text-sm font-medium text-text-muted mr-2">Filter by tag:</span>
-              <a
-                href="/blog"
-                class="px-3 py-1.5 text-sm font-medium rounded-md bg-surface text-text-muted hover:bg-primary/10 hover:text-primary transition-colors"
-              >
-                All
-              </a>
-              {allTags.map((t) => (
-                <a
-                  href={`/blog/tag/${t}`}
-                  class:list={[
-                    'px-3 py-1.5 text-sm font-medium rounded-md transition-colors',
-                    t === tag
-                      ? 'bg-primary text-white'
-                      : 'bg-surface text-text-muted hover:bg-primary/10 hover:text-primary',
-                  ]}
-                >
-                  {t}
-                </a>
-              ))}
-            </div>
-          </div>
-        )
-      }
-
-      <!-- Posts Grid -->
-      <div class="space-y-10">
+      {/* Pill Tabs */}
+      <div class="flex flex-wrap items-center justify-center gap-3 mb-16 max-w-4xl mx-auto">
+        <a
+          href="/blog"
+          class="px-5 py-2 rounded-full text-sm font-medium bg-surface text-text hover:bg-primary/10 border border-border hover:border-primary/30 transition-all shadow-sm"
+        >
+          All
+        </a>
         {
-          filteredPosts.map((post) => (
-            <article class="group">
-              <a href={`/blog/${post.id}`} class="block">
-                <div class="flex flex-col sm:flex-row gap-6">
-                  <div class="sm:w-48 sm:h-32 shrink-0 rounded-lg overflow-hidden bg-surface">
-                    {post.data.image ? (
-                      <img
-                        src={post.data.image}
-                        alt={post.data.title}
-                        class="w-full h-32 sm:h-full object-cover"
-                      />
-                    ) : (
-                      <div class="w-full h-32 sm:h-full bg-primary/10 flex items-center justify-center">
-                        <Icon name="lucide:image" class="w-12 h-12 text-primary/40" />
-                      </div>
-                    )}
-                  </div>
-                  <div class="flex-1">
-                    <div class="flex flex-wrap items-center gap-3 text-sm text-text-muted mb-2">
-                      <span>
-                        {post.data.publishedDate.toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
-                      </span>
-                      <span>·</span>
-                      <span>{calculateReadingTime(post.body || '')} min read</span>
-                    </div>
-                    <h2 class="text-xl font-bold text-text group-hover:text-primary transition-colors">
-                      {post.data.title}
-                    </h2>
-                    <p class="mt-2 text-text-muted line-clamp-2">{post.data.description}</p>
-                    {post.data.tags.length > 0 && (
-                      <div class="flex flex-wrap gap-2 mt-3">
-                        {getTypedTagsWithActive(post.data.tags, tag).map(({ tag: t, isActive }) => (
-                          <span
-                            class:list={[
-                              'px-2 py-0.5 text-xs font-medium rounded',
-                              isActive
-                                ? 'bg-primary/20 text-primary'
-                                : 'bg-surface text-text-muted',
-                            ]}
-                          >
-                            {t}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </a>
-            </article>
+          allTags.map((t: string) => (
+            <a
+              href={`/blog/tag/${slugifyTag(t)}`}
+              class:list={[
+                'px-5 py-2 rounded-full text-sm font-medium transition-all shadow-sm group',
+                slugifyTag(t) === tagSlug
+                  ? 'bg-text text-background shadow-md border-transparent'
+                  : 'bg-surface text-text hover:bg-primary/10 border border-border hover:border-primary/30',
+              ]}
+            >
+              {t}
+            </a>
           ))
         }
       </div>
 
+      {/* Featured Post (Hero) */}
+      {
+        featuredPost && (
+          <article class="bg-surface rounded-3xl shadow-sm border border-border/60 transition-shadow hover:shadow-md flex flex-col md:flex-row mb-6 h-auto md:h-100 p-3">
+            <div class="md:w-1/2 h-72 md:h-full relative overflow-hidden bg-primary/5 rounded-2xl shrink-0">
+              {featuredPost.data.image && (
+                <OptimizedImage
+                  src={featuredPost.data.image}
+                  alt={featuredPost.data.title}
+                  width={1200}
+                  height={675}
+                  class="w-full h-full object-cover"
+                  loading="eager"
+                />
+              )}
+              <div class="absolute top-4 right-4 bg-[#F59E0B] text-white text-xs font-bold px-3 py-1.5 rounded flex items-center gap-1.5 shadow-sm uppercase tracking-wide">
+                <Icon name="lucide:crown" class="w-3.5 h-3.5" /> PRO
+              </div>
+            </div>
+            <div class="md:w-1/2 p-6 md:px-10 md:py-8 flex flex-col justify-center">
+              <span class="inline-block text-[#6366F1] text-[13px] font-semibold mb-4 bg-[#EEF2FF] px-3 py-1 rounded-full w-fit">
+                {featuredPost.data.tags?.[0] || tag}
+              </span>
+              <a href={`/blog/${featuredPost.id}`}>
+                <h2 class="text-3xl lg:text-[32px] font-extrabold text-[#111827] dark:text-white leading-tight mb-4 hover:text-[#6366F1] transition-colors">
+                  {featuredPost.data.title}
+                </h2>
+              </a>
+              <p class="text-[#6B7280] dark:text-gray-400 text-base line-clamp-3 mb-6 leading-relaxed">
+                {featuredPost.data.description}
+              </p>
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                  <Icon name="lucide:user" class="w-4 h-4 text-slate-500" />
+                </div>
+                <div class="text-[13px] text-[#6B7280] dark:text-gray-400 flex items-center gap-1.5">
+                  <span class="font-medium text-[#374151] dark:text-gray-300">
+                    {featuredPost.data.author || siteConfig.author}
+                  </span>
+                  <span>&bull;</span>
+                  <span>
+                    {featuredPost.data.publishedDate.toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </article>
+        )
+      }
+
+      {/* Grid */}
+
+      {
+        regularPosts.length > 0 && (
+          <>
+            <div class="mb-8 flex items-center justify-between border-b border-border/50 pb-4">
+              <h2 class="text-2xl font-bold text-text">More from {tag}</h2>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
+              {regularPosts.map((post) => (
+                <article class="group h-full flex flex-col bg-surface rounded-2xl overflow-hidden shadow-sm border border-border hover:shadow-xl hover:border-primary/30 transition-all duration-500 relative transform hover:-translate-y-1">
+                  <a href={`/blog/${post.id}`} class="absolute inset-0 z-10">
+                    <span class="sr-only">View Article</span>
+                  </a>
+
+                  {/* Image */}
+                  <div class="w-full aspect-4/3 relative overflow-hidden bg-background border-b border-border/40">
+                    {post.data.image ? (
+                      <OptimizedImage
+                        src={post.data.image}
+                        alt={post.data.title}
+                        width={1200}
+                        height={900}
+                        class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700 ease-out"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div class="w-full h-full flex items-center justify-center bg-primary/5 group-hover:bg-primary/10 transition-colors">
+                        <Icon name="lucide:image" class="w-12 h-12 text-primary/20" />
+                      </div>
+                    )}
+                    {/* Floating Badge */}
+                    <div class="absolute top-4 left-4 z-20">
+                      <span class="px-3 py-1 rounded-full bg-background/90 backdrop-blur-md border border-border/50 text-[10px] font-bold uppercase tracking-widest text-text shadow-sm">
+                        {post.data.tags?.[0] || tag}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Content */}
+                  <div class="p-6 flex-1 flex flex-col bg-surface relative">
+                    <h3 class="text-xl font-bold text-text mb-3 leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                      {post.data.title}
+                    </h3>
+
+                    <p class="text-sm leading-relaxed text-text-muted line-clamp-3 mb-6">
+                      {post.data.description}
+                    </p>
+
+                    {/* Bottom Meta */}
+                    <div class="mt-auto flex items-center justify-between pt-5 border-t border-border/40">
+                      <div class="text-xs font-medium text-text-muted flex items-center gap-3">
+                        <span class="flex items-center gap-1.5">
+                          <Icon name="lucide:calendar" class="w-3.5 h-3.5" />
+                          {post.data.publishedDate.toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </span>
+                        <span class="flex items-center gap-1.5 opacity-70">
+                          <Icon name="lucide:clock" class="w-3.5 h-3.5" />
+                          {calculateReadingTime(post.body || '')}m
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          </>
+        )
+      }
+
       {
         filteredPosts.length === 0 && (
-          <div class="text-center py-12">
-            <p class="text-text-muted">No posts found with this tag.</p>
-            <a href="/blog" class="text-primary hover:underline mt-2 inline-block">
+          <div class="text-center py-12 bg-surface rounded-3xl border border-border">
+            <p class="text-text-muted text-lg mb-4">No posts found with this tag.</p>
+            <a
+              href="/blog"
+              class="inline-flex items-center justify-center px-6 py-3 border border-border rounded-xl text-sm font-medium hover:bg-primary/5 transition-colors"
+            >
               View all posts
             </a>
           </div>

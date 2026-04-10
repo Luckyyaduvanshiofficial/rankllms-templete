@@ -181,7 +181,9 @@ select:focus-visible {
   height: 32px; /* Slimmer height */
   width: 100%;
   font-weight: 400;
-  transition: border-color 0.2s ease, width 0.3s ease;
+  transition:
+    border-color 0.2s ease,
+    width 0.3s ease;
 }
 .pagefind-container:focus-within {
   width: 220px; /* Automatically expanding when users click on it */

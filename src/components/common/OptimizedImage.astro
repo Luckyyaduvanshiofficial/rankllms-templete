@@ -77,43 +77,69 @@ const {
   quality = 80,
 } = Astro.props;
 
-// Check if src is a remote URL
-const isRemote =
-  typeof src === 'string' && (src.startsWith('http://') || src.startsWith('https://'));
+const imageDimensions = { width, height };
 
-// For remote images, we need to use img tag with loading="lazy"
-// For local images, use Astro's Image component
+function hasImageDimensions(
+  dimensions: typeof imageDimensions
+): dimensions is { width: number; height: number } {
+  return typeof dimensions.width === 'number' && typeof dimensions.height === 'number';
+}
+
+function isRemoteUrl(src: string): boolean {
+  return typeof src === 'string' && (src.startsWith('http://') || src.startsWith('https://'));
+}
 ---
 
 {
-  isRemote ? (
-    <img
-      src={src}
-      alt={alt}
-      width={width}
-      height={height}
-      loading={loading}
-      decoding={decoding}
-      class={className}
-    />
-  ) : typeof src === 'string' ? (
-    /* Local path string - use regular img with lazy loading */
-    <img
-      src={src}
-      alt={alt}
-      width={width}
-      height={height}
-      loading={loading}
-      decoding={decoding}
-      class={className}
-    />
-  ) : (
-    /* Imported image - use Astro Image for optimization */
+  typeof src === 'string' ? (
+    hasImageDimensions(imageDimensions) ? (
+      <Image
+        src={src}
+        alt={alt}
+        width={imageDimensions.width}
+        height={imageDimensions.height}
+        loading={loading}
+        decoding={decoding}
+        class={className}
+        format={format}
+        quality={quality}
+      />
+    ) : isRemoteUrl(src) ? (
+      <img
+        src={src}
+        alt={alt}
+        loading={loading}
+        decoding={decoding}
+        class={className}
+      />
+    ) : (
+      <Image
+        src={src}
+        alt={alt}
+        inferSize
+        loading={loading}
+        decoding={decoding}
+        class={className}
+        format={format}
+        quality={quality}
+      />
+    )
+  ) : hasImageDimensions(imageDimensions) ? (
     <Image
       src={src}
       alt={alt}
-      width={width}
-      height={height}
+      width={imageDimensions.width}
+      height={imageDimensions.height}
+      loading={loading}
+      decoding={decoding}
+      class={className}
+      format={format}
+      quality={quality}
+    />
+  ) : (
+    <Image
+      src={src}
+      alt={alt}
       loading={loading}
       decoding={decoding}
       class={className}

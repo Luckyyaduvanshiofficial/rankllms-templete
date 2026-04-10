@@ -1,134 +1,382 @@
 ---
 import MarketingLayout from '@/layouts/MarketingLayout.astro';
-import Pagination from '@ui/Pagination.astro';
 import { Icon } from 'astro-icon/components';
-import { getCollection, type CollectionEntry } from 'astro:content';
-import { siteConfig } from '@/config';
-import { calculateReadingTime } from '@/lib/utils';
-
+import { type CollectionEntry } from 'astro:content';
 import { getBlogPosts } from '@/lib/strapi';
+import { siteConfig } from '@/config';
+import OptimizedImage from '@components/common/OptimizedImage.astro';
+import { slugifyTag } from '@/lib/utils';
 
 type BlogPost = CollectionEntry<'blog'>;
+const POSTS_PER_PAGE = 9;
 
-const POSTS_PER_PAGE = 6;
+const allPosts = await getBlogPosts();
 
-const posts = await getBlogPosts();
+// 3 Months Ago Target Date
+const threeMonthsAgo = new Date();
+threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+// Automatically remove "News" articles older than 3 months from main feed
+const posts = allPosts.filter(post => {
+  const isNews = post.data.tags?.some((tag: string) => tag.toLowerCase() === 'news');
+  const isOlderThan3Months = post.data.publishedDate < threeMonthsAgo;
+  return !(isNews && isOlderThan3Months);
+});
 const sortedPosts = [...posts].sort(
-  (a: BlogPost, b: BlogPost) => b.data.publishedDate.getTime() - a.data.publishedDate.getTime()
+  (a, b) => b.data.publishedDate.getTime() - a.data.publishedDate.getTime()
 );
 
-// Get current page from URL
-const currentPage = 1;
-const totalPages = Math.ceil(sortedPosts.length / POSTS_PER_PAGE);
-const paginatedPosts: BlogPost[] = sortedPosts.slice(0, POSTS_PER_PAGE);
+const paginatedPosts = sortedPosts.slice(0, POSTS_PER_PAGE);
 
-// Get all unique tags
-const allTags = [...new Set(posts.flatMap((post: BlogPost) => post.data.tags))].sort();
+// Top 3 featured posts
+const featuredPost = paginatedPosts[0];
+const subFeaturedPosts = paginatedPosts.slice(1, 3);
+const gridPosts = paginatedPosts.slice(3);
 
-// Helper to get typed tags
-const getTypedTags = (tags: string[]) => tags.slice(0, 3);
+// Dynamic Tags with counts
+const tagCounts = posts.reduce(
+  (acc: Record<string, number>, post: BlogPost) => {
+    post.data.tags?.forEach((tag: string) => {
+      acc[tag] = (acc[tag] || 0) + 1;
+    });
+    return acc;
+  },
+  {} as Record<string, number>
+);
+
+const sortedTags = (Object.entries(tagCounts) as [string, number][])
+  .sort((a, b) => b[1] - a[1]) // highest count first
+  .slice(0, 5); // top 5 tags
+
+// Authors with counts
+const authorCounts = posts.reduce(
+  (acc, post: BlogPost) => {
+    const author = post.data.author || 'Anonymous';
+    acc[author] = (acc[author] || 0) + 1;
+    return acc;
+  },
+  {} as Record<string, number>
+);
+
+const topAuthors = (Object.entries(authorCounts) as [string, number][])
+  .sort((a, b) => b[1] - a[1])
+  .slice(0, 3)
+  .map(([name, count]) => ({ name, count }));
 ---
 
-<MarketingLayout
-  title="Blog"
-  description={`Latest news, updates, and insights from the ${siteConfig.name} team.`}
->
-  <section class="py-section">
-    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-12">
-        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-text mb-6 py-2">
-          Blog
-        </h1>
-        <p class="mt-4 text-base sm:text-lg text-text-muted max-w-2xl mx-auto text-pretty">
-          Latest news, updates, and insights from the team.
-      <!-- Tags Filter -->
+<MarketingLayout title="Blog" description="Latest news and insights.">
+  <section class="relative py-16 bg-background">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      {/* Top Featured Post */}
       {
-        allTags.length > 0 && (
-          <div class="mb-10">
-            <div class="flex flex-wrap items-center gap-2">
-              <span class="text-sm font-medium text-text-muted mr-2">Filter by tag:</span>
-              <a
-                href="/blog"
-                class="px-3 py-1.5 text-sm font-medium rounded-md bg-primary text-white"
-              >
-                All
-              </a>
-              {allTags.map((tag) => (
-                <a
-                  href={`/blog/tag/${tag}`}
-                  class="px-3 py-1.5 text-sm font-medium rounded-md bg-surface text-text-muted hover:bg-primary/10 hover:text-primary transition-colors"
-                >
-                  {tag}
-                </a>
-              ))}
+        featuredPost && (
+          <article class="bg-surface rounded-3xl shadow-sm border border-border/60 transition-shadow hover:shadow-md flex flex-col md:flex-row mb-6 h-auto md:h-100 p-3">
+            <div class="md:w-1/2 h-72 md:h-full relative overflow-hidden bg-primary/5 rounded-2xl shrink-0">
+              {featuredPost.data.image && (
+                <OptimizedImage
+                  src={featuredPost.data.image}
+                  alt={featuredPost.data.title}
+                  width={1200}
+                  height={675}
+                  class="w-full h-full object-cover"
+                  loading="eager"
+                />
+              )}
+              <div class="absolute top-4 right-4 bg-[#F59E0B] text-white text-xs font-bold px-3 py-1.5 rounded flex items-center gap-1.5 shadow-sm uppercase tracking-wide">
+                <Icon name="lucide:crown" class="w-3.5 h-3.5" /> PRO
+              </div>
             </div>
-          </div>
+            <div class="md:w-1/2 p-6 md:px-10 md:py-8 flex flex-col justify-center">
+              <span class="inline-block text-[#6366F1] text-[13px] font-semibold mb-4 bg-[#EEF2FF] px-3 py-1 rounded-full w-fit">
+                {featuredPost.data.tags?.[0] || 'Uncategorized'}
+              </span>
+              <a href={`/blog/${featuredPost.id}`}>
+                <h2 class="text-3xl lg:text-[32px] font-extrabold text-[#111827] dark:text-white leading-tight mb-4 hover:text-[#6366F1] transition-colors">
+                  {featuredPost.data.title}
+                </h2>
+              </a>
+              <p class="text-[#6B7280] dark:text-gray-400 text-base line-clamp-3 mb-6 leading-relaxed">
+                {featuredPost.data.description}
+              </p>
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-slate-200 overflow-hidden flex items-center justify-center shrink-0">
+                  <Icon name="lucide:user" class="w-4 h-4 text-slate-500" />
+                </div>
+                <div class="text-[13px] text-[#6B7280] dark:text-gray-400 flex items-center gap-1.5">
+                  <span class="font-medium text-[#374151] dark:text-gray-300">
+                    {featuredPost.data.author || siteConfig.author}
+                  </span>
+                  <span>&bull;</span>
+                  <span>
+                    {featuredPost.data.publishedDate.toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </article>
         )
       }
 
-      <!-- Posts Grid -->
-      <div class="space-y-10">
+      {/* 2 Sub-Featured Posts */}
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-16">
         {
-          paginatedPosts.map((post) => (
-            <article class="group">
-              <a href={`/blog/${post.id}`} class="block">
-                <div class="flex flex-col sm:flex-row gap-6">
-                  <div class="sm:w-48 sm:h-32 shrink-0 rounded-lg overflow-hidden bg-surface">
-                    {post.data.image ? (
-                      <img
-                        src={post.data.image}
-                        alt={post.data.title}
-                        class="w-full h-32 sm:h-full object-cover"
-                      />
-                    ) : (
-                      <div class="w-full h-32 sm:h-full bg-primary/10 flex items-center justify-center">
-                        <Icon name="lucide:image" class="w-12 h-12 text-primary/40" />
-                      </div>
-                    )}
-                  </div>
-                  <div class="flex-1">
-                    <div class="flex flex-wrap items-center gap-3 text-sm text-text-muted mb-2">
-                      <span>
-                        {post.data.publishedDate.toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        })}
-                      </span>
-                      <span>·</span>
-                      <span>{calculateReadingTime(post.body || '')} min read</span>
-                    </div>
-                    <h2 class="text-xl font-bold text-text group-hover:text-primary transition-colors">
-                      {post.data.title}
-                    </h2>
-                    <p class="mt-2 text-text-muted line-clamp-2">{post.data.description}</p>
-                    {post.data.tags.length > 0 && (
-                      <div class="flex flex-wrap gap-2 mt-3">
-                        {getTypedTags(post.data.tags).map((tag) => (
-                          <span class="px-2 py-0.5 text-xs font-medium bg-surface text-text-muted rounded">
-                            {tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+          subFeaturedPosts.map((post) => (
+            <article class="bg-surface rounded-2xl shadow-sm border border-border/60 hover:shadow-md transition-shadow flex items-center h-auto md:h-48 p-2.5">
+              <div class="w-2/5 md:w-1/3 h-32 md:h-full relative bg-primary/5 rounded-xl overflow-hidden shrink-0">
+                {post.data.image && (
+                  <OptimizedImage
+                    src={post.data.image}
+                    alt={post.data.title}
+                    width={1200}
+                    height={800}
+                    class="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                )}
+              </div>
+              <div class="w-3/5 md:w-2/3 p-4 md:px-6 md:py-3 flex flex-col justify-center">
+                <span class="inline-block text-[#3B82F6] text-[11px] font-semibold mb-2.5 bg-[#EFF6FF] px-2.5 py-0.5 rounded-full w-fit">
+                  {post.data.tags?.[0] || 'Uncategorized'}
+                </span>
+                <a href={`/blog/${post.id}`}>
+                  <h3 class="text-base md:text-lg font-bold text-[#111827] dark:text-white leading-snug mb-2 hover:text-[#3B82F6] transition-colors line-clamp-3">
+                    {post.data.title}
+                  </h3>
+                </a>
+                <div class="text-[11px] text-[#6B7280] dark:text-gray-400 flex items-center gap-1.5 mt-auto">
+                  <span class="font-medium text-[#374151] dark:text-gray-300">
+                    By {post.data.author || siteConfig.author}
+                  </span>
+                  <span>&bull;</span>
+                  <span>
+                    {post.data.publishedDate.toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })}
+                  </span>
                 </div>
-              </a>
+              </div>
             </article>
           ))
         }
       </div>
 
+      {/* Browse by Category */}
+      <div class="text-center mb-10">
+        <h2 class="text-4xl font-bold text-text mb-3">Browse by Category</h2>
+        <p class="text-text-muted">Select a category to see more related content</p>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-center gap-4 mb-16">
+        <a
+          href="/blog"
+          class="px-6 py-2.5 rounded-full text-sm font-bold bg-text text-background shadow-md"
+        >
+          All ({posts.length.toString().padStart(2, '0')})
+        </a>
+        {
+          sortedTags.map(([tag, count]) => (
+            <a
+              href={`/blog/tag/${slugifyTag(tag)}`}
+              class="px-6 py-2.5 rounded-full text-sm font-medium bg-surface text-text hover:bg-primary/5 border border-border"
+            >
+              {tag} ({count.toString().padStart(2, '0')})
+            </a>
+          ))
+        }
+      </div>
+
+      {/* 3-Column Standard Grid */}
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12">
+        {
+          gridPosts.map((post) => (
+            <article class="flex flex-col bg-surface rounded-4xl overflow-hidden shadow-sm border border-border/50 hover:shadow-md transition-shadow h-full group">
+              <div class="w-full aspect-4/3 relative overflow-hidden bg-primary/5 hidden md:block">
+                {post.data.image && (
+                  <a href={`/blog/${post.id}`}>
+                    <OptimizedImage
+                      src={post.data.image}
+                      alt={post.data.title}
+                      width={1200}
+                      height={900}
+                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                  </a>
+                )}
+              </div>
+
+              <div class="p-8 flex flex-col flex-1">
+                <a href={`/blog/${post.id}`}>
+                  <h3 class="text-xl font-bold text-text mb-3 leading-snug group-hover:text-primary transition-colors line-clamp-2">
+                    {post.data.title}
+                  </h3>
+                </a>
+                <p class="text-text-muted text-sm line-clamp-3 mb-6 flex-1 leading-relaxed">
+                  {post.data.description}
+                </p>
+                <div class="flex items-center justify-between pt-5">
+                  <div class="flex items-center gap-2.5">
+                    <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 overflow-hidden shrink-0">
+                      <Icon name="lucide:user" class="w-4 h-4" />
+                    </div>
+                    <div class="text-xs">
+                      <span class="font-bold text-text block">
+                        {post.data.author || siteConfig.author}
+                      </span>
+                      <span class="text-text-muted">
+                        {post.data.publishedDate.toLocaleDateString('en-US', {
+                          month: 'short',
+                          day: 'numeric',
+                          year: 'numeric',
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                  <span class="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-3 py-1.5 rounded-full uppercase tracking-wider">
+                    {post.data.tags?.[0] || 'Uncategorized'}
+                  </span>
+                </div>
+              </div>
+            </article>
+          ))
+        }
+      </div>
+
+      {/* Browse All Button */}
+      <div class="text-center mb-24">
+        <button
+          disabled
+          class="inline-block px-8 py-3 border-2 border-border text-text font-bold rounded-lg opacity-50 cursor-not-allowed"
+          title="Already viewing all blog posts"
+        >
+          Browse all Posts
+        </button>
+      </div>
+
+      {/* Top Authors Section */}
       {
-        sortedPosts.length === 0 && (
-          <div class="text-center py-12">
-            <p class="text-text-muted">No blog posts yet. Check back soon!</p>
-          </div>
+        topAuthors.length > 0 && (
+          <>
+            <div class="flex items-center justify-between mb-8 pb-4 border-b border-border/50">
+              <h2 class="text-3xl font-bold text-text">Top Authors</h2>
+              <a href="#" class="text-sm font-bold flex items-center text-text-muted hover:text-text transition-colors">
+                All Authors <Icon name="lucide:arrow-up-right" class="w-4 h-4 ml-1" />
+              </a>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-24">
+              {topAuthors.map((author) => (
+                <div class="bg-surface border border-border/50 rounded-4xl p-6 flex items-center gap-4 shadow-sm hover:shadow-md transition-shadow">
+                  <div class="w-20 h-20 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 overflow-hidden shrink-0">
+                    <Icon name="lucide:user" class="w-8 h-8" />
+                  </div>
+                  <div>
+                    <h3 class="font-bold text-lg text-text mb-0.5">{author.name}</h3>
+                    <p class="text-text-muted text-xs mb-2">Content Writer</p>
+                    <p class="text-xs font-medium text-text-muted flex items-center gap-1.5">
+                      <Icon name="lucide:align-left" class="w-3.5 h-3.5" />
+                      {author.count} Published posts
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         )
       }
+    </div>
 
-      <!-- Pagination -->
-      <Pagination currentPage={currentPage} totalPages={totalPages} basePath="/blog" />
+    {/* Newsletter Block Outside Max Width Constraint For Background */}
+    <div class="bg-zinc-50 dark:bg-zinc-900 border-y border-border py-16">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col md:flex-row items-center justify-between gap-8 max-w-5xl mx-auto">
+          <div class="md:w-1/2 text-center md:text-left">
+            <h2 class="text-3xl font-bold text-text mb-3">Subscribe to Newsletter</h2>
+            <p class="text-text-muted text-sm leading-relaxed max-w-sm">
+              Provide your email to get email notification when we launch new products or publish
+              new articles
+            </p>
+          </div>
+          <div class="md:w-1/2 w-full max-w-md mx-auto md:mx-0">
+            <form
+              id="newsletter-form"
+              class="flex flex-col sm:flex-row gap-3 shadow-sm bg-background p-2 rounded-xl border border-border"
+            >
+              <input
+                type="email"
+                name="email"
+                placeholder="Enter your Email"
+                required
+                class="flex-1 px-4 py-2 bg-transparent focus:outline-none text-sm placeholder:text-text-muted/60"
+              />
+              <button
+                type="submit"
+                class="px-8 py-3 bg-text text-background font-bold rounded-lg hover:bg-text/90 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Subscribe
+              </button>
+            </form>
+            <div
+              id="newsletter-status"
+              aria-live="polite"
+              aria-atomic="true"
+              class="mt-3 text-sm font-medium min-h-5"
+              role="status"
+            ></div>
+            <script>
+              {
+                const form = document.getElementById('newsletter-form');
+                const statusElement = document.getElementById('newsletter-status');
+                if (form && statusElement) {
+                  form.addEventListener('submit', async (e) => {
+                    e.preventDefault();
+                    const emailInput = form.querySelector('input[name="email"]') as HTMLInputElement;
+                    const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
+                    
+                    if (!emailInput?.value) {
+                      return;
+                    }
+
+                    // Clear previous status message
+                    statusElement.textContent = '';
+                    statusElement.className = 'mt-3 text-sm font-medium min-h-5';
+
+                    try {
+                      submitButton.disabled = true;
+                      const response = await fetch('/api/subscribe', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: emailInput.value }),
+                      });
+
+                      if (response.ok) {
+                        emailInput.value = '';
+                        statusElement.textContent = 'Subscription successful! Check your email to confirm.';
+                        statusElement.className = 'mt-3 text-sm font-medium min-h-5 text-green-600 dark:text-green-400';
+                      } else {
+                        statusElement.textContent = 'Subscription failed, please try again.';
+                        statusElement.className = 'mt-3 text-sm font-medium min-h-5 text-red-600 dark:text-red-400';
+                      }
+                    } catch (error) {
+                      console.error('Newsletter subscription error:', error);
+                      statusElement.textContent = 'Subscription failed, please try again.';
+                      statusElement.className = 'mt-3 text-sm font-medium min-h-5 text-red-600 dark:text-red-400';
+                    } finally {
+                      submitButton.disabled = false;
+                    }
+                  });
+                }
+              }
+            </script>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 </MarketingLayout>

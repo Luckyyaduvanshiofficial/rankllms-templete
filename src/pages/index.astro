@@ -9,12 +9,15 @@ import CTA from '@sections/marketing/CTA.astro';
 import Newsletter from '@sections/marketing/Newsletter.astro';
 import { siteConfig } from '@/config';
 import { Icon } from 'astro-icon/components';
+import OptimizedImage from '@components/common/OptimizedImage.astro';
 
 type BlogPost = CollectionEntry<'blog'>;
 
 const posts = await getCollection('blog', ({ data }: { data: BlogPost['data'] }) => !data.draft);
 const latestPosts = [...posts]
-  .sort((a: BlogPost, b: BlogPost) => b.data.publishedDate.getTime() - a.data.publishedDate.getTime())
+  .sort(
+    (a: BlogPost, b: BlogPost) => b.data.publishedDate.getTime() - a.data.publishedDate.getTime()
+  )
   .slice(0, 3);
 
 const bentoItems = [
@@ -82,12 +85,14 @@ const bentoItems = [
     steps={[
       {
         title: 'Define your use case',
-        description: 'Identify if you need coding, creative writing, agents, or offline-capable capabilities.',
+        description:
+          'Identify if you need coding, creative writing, agents, or offline-capable capabilities.',
         icon: 'lucide:target',
       },
       {
         title: 'Compare Benchmarks',
-        description: 'Look at GPQA, MMLU, and HumanEval scores to evaluate capabilities accurately.',
+        description:
+          'Look at GPQA, MMLU, and HumanEval scores to evaluate capabilities accurately.',
         icon: 'lucide:bar-chart-2',
       },
       {
@@ -117,24 +122,33 @@ const bentoItems = [
               Deep dives, tutorials, and benchmark analysis from our AI experts.
             </p>
           </div>
-          
+
           <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
             {latestPosts.map((post) => (
-              <a href={`/blog/${post.id}`} class="group rounded-xl border border-border bg-surface overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col">
+              <a
+                href={`/blog/${post.id}`}
+                class="group rounded-xl border border-border bg-surface overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col"
+              >
                 <div class="h-48 overflow-hidden bg-muted relative shrink-0">
                   {post.data.image ? (
-                    <img
+                    <OptimizedImage
                       src={post.data.image}
                       alt={post.data.title}
+                      width={1200}
+                      height={675}
                       class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      loading="lazy"
                     />
                   ) : (
                     <div class="w-full h-full bg-primary/10 flex items-center justify-center">
-                      <Icon name="lucide:image" class="w-12 h-12 text-primary/40 group-hover:scale-110 transition-transform" />
+                      <Icon
+                        name="lucide:image"
+                        class="w-12 h-12 text-primary/40 group-hover:scale-110 transition-transform"
+                      />
                     </div>
                   )}
                 </div>
-                <div class="p-6 flex flex-col flex-grow">
+                <div class="p-6 flex flex-col grow">
                   <div class="flex items-center gap-2 text-sm text-primary font-medium mb-3">
                     <Icon name="lucide:calendar" class="w-4 h-4" />
                     <time datetime={post.data.publishedDate.toISOString()}>
@@ -148,19 +162,24 @@ const bentoItems = [
                   <h3 class="text-xl font-bold text-text mb-2 group-hover:text-primary transition-colors line-clamp-2">
                     {post.data.title}
                   </h3>
-                  <p class="text-text-muted line-clamp-3 mb-4">
-                    {post.data.description}
-                  </p>
+                  <p class="text-text-muted line-clamp-3 mb-4">{post.data.description}</p>
                   <div class="flex items-center text-primary font-medium text-sm mt-auto">
-                    Read article <Icon name="lucide:arrow-right" class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                    Read article{' '}
+                    <Icon
+                      name="lucide:arrow-right"
+                      class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform"
+                    />
                   </div>
                 </div>
               </a>
             ))}
           </div>
-          
+
           <div class="mt-12 text-center">
-            <a href="/blog" class="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-surface border border-border text-text font-medium hover:bg-muted transition-colors">
+            <a
+              href="/blog"
+              class="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-surface border border-border text-text font-medium hover:bg-muted transition-colors"
+            >
               View all posts
             </a>
           </div>

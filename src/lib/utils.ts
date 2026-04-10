@@ -16,9 +16,21 @@
  * ```
  */
 export function calculateReadingTime(text: string): number {
-  const wordCount = text.trim().split(/\s+/).length;
+  const normalizedText = text.trim();
+
+  if (!normalizedText) {
+    return 0;
+  }
+
+  const wordCount = normalizedText.split(/\s+/).length;
   return Math.ceil(wordCount / 200);
 }
+
+const DEFAULT_DATE_FORMAT_OPTIONS: Intl.DateTimeFormatOptions = {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+};
 
 /**
  * Format a date for display
@@ -45,11 +57,16 @@ export function calculateReadingTime(text: string): number {
  */
 export function formatDate(
   date: Date,
-  options: Intl.DateTimeFormatOptions = {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  }
+  options: Intl.DateTimeFormatOptions = DEFAULT_DATE_FORMAT_OPTIONS
 ): string {
   return new Intl.DateTimeFormat('en-US', options).format(date);
+}
+
+export function slugifyTag(tag: string): string {
+  return tag
+    .trim()
+    .toLowerCase()
+    .replaceAll(/['’]/g, '')
+    .replaceAll(/[^a-z0-9]+/g, '-')
+    .replaceAll(/^-+|-+$/g, '');
 }

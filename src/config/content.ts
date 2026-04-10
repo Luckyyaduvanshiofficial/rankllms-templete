@@ -23,7 +23,7 @@ export const announcement: AnnouncementConfig = {
   href: '/models',
 
   /** Optional link text */
-  linkText: "Explore Models",
+  linkText: 'Explore Models',
 
   /** Visual style: 'primary' | 'secondary' | 'gradient' */
   variant: 'primary',

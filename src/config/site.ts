@@ -3,9 +3,25 @@ import type { SocialLinks, LegalConfig } from '../lib/types';
 export const name = import.meta.env.SITE_NAME || 'RankLLMs';
 
 export const description =
-  import.meta.env.SITE_DESCRIPTION || 'Compare 300+ Large Language Models by their pricing, context windows, and benchmarks.';
+  import.meta.env.SITE_DESCRIPTION ||
+  'Compare 300+ Large Language Models by their pricing, context windows, and benchmarks.';
 
-export const url = import.meta.env.SITE_URL || 'https://rankllms.com';
+function resolveSiteUrl(): string {
+  const siteUrl = (typeof process !== 'undefined' && process.env?.SITE_URL) || import.meta.env.SITE_URL;
+
+  if (siteUrl) {
+    return siteUrl;
+  }
+
+  // Use Astro's import.meta.env.PROD to detect production vs development
+  if (!import.meta.env.PROD) {
+    return 'http://localhost:4321';
+  }
+
+  throw new Error('SITE_URL is required for production builds. Set it in your environment.');
+}
+
+export const url = resolveSiteUrl();
 
 export const author = import.meta.env.SITE_AUTHOR || 'Lucky Yaduvanshi';
 

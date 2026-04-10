@@ -1,0 +1,103 @@
+---
+import MarketingLayout from '@/layouts/MarketingLayout.astro';
+import { Icon } from 'astro-icon/components';
+import { type CollectionEntry } from 'astro:content';
+import { getBlogPosts } from '@/lib/strapi';
+
+type BlogPost = CollectionEntry<'blog'>;
+
+const posts = await getBlogPosts();
+
+// Calculate date exactly 3 months ago
+const threeMonthsAgo = new Date();
+threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+// Only capture "News" posts that are older than 3 months
+const archivedPosts = posts.filter((post: BlogPost) => {
+  const isNews = post.data.tags?.some((tag: string) => tag.toLowerCase() === 'news');
+  const isOlderThan3Months = post.data.publishedDate < threeMonthsAgo;
+  return isNews && isOlderThan3Months;
+}).sort(
+  (a, b) => b.data.publishedDate.getTime() - a.data.publishedDate.getTime()
+);
+
+// Group posts by Year
+const groupedByYear = archivedPosts.reduce((acc, post) => {
+  const year = post.data.publishedDate.getFullYear().toString();
+  if (!acc[year]) acc[year] = [];
+  acc[year].push(post);
+  return acc;
+}, {} as Record<string, BlogPost[]>);
+
+const sortedYears = Object.keys(groupedByYear).sort((a, b) => Number(b) - Number(a));
+---
+
+<MarketingLayout title="News Archive" description="Browse all older news updates from RankLLMs.">
+  <section class="relative py-20 overflow-hidden bg-background min-h-screen">
+    <!-- Ambient Background Mesh -->
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/20 blur-[120px] rounded-full pointer-events-none opacity-50"></div>     
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+
+      {/* Header section */}
+      <div class="text-center mb-16 space-y-4">
+        <a href="/blog" class="inline-flex items-center gap-2 text-primary hover:underline text-sm font-bold uppercase tracking-wider mb-6 transition-colors hover:text-text">
+          <Icon name="lucide:arrow-left" class="w-4 h-4" />
+          Back to all posts
+        </a>
+        <h1 class="text-5xl md:text-6xl font-serif text-text tracking-tight pb-2 font-bold">
+          News Archive
+        </h1>
+        <p class="text-lg md:text-xl text-text-muted leading-relaxed text-pretty">
+          Historical product updates and announcements older than 3 months.
+        </p>
+      </div>
+
+      {/* Timeline Layout */}
+      {archivedPosts.length > 0 ? (
+        <div class="space-y-16">
+          {sortedYears.map((year) => (
+            <div class="relative">
+              <h2 class="text-3xl font-extrabold text-text mb-8">{year}</h2>
+              <div class="space-y-6">
+                {groupedByYear[year].map((post) => (
+                  <article class="bg-surface rounded-2xl shadow-sm border border-border/60 hover:shadow-md transition-shadow flex flex-col md:flex-row items-center h-auto md:h-32 p-3">   
+                    <div class="w-full md:w-48 h-32 md:h-full relative bg-primary/5 rounded-xl overflow-hidden shrink-0">
+                      {post.data.image ? (
+                        <img src={post.data.image} alt={post.data.title} class="w-full h-full object-cover" />
+                      ) : (
+                        <div class="w-full h-full flex items-center justify-center">
+                          <Icon name="lucide:image" class="w-8 h-8 text-primary/20" />
+                        </div>
+                      )}
+                    </div>
+                    <div class="w-full md:flex-1 p-4 md:px-6 flex flex-col justify-center">
+                      <div class="text-[11px] text-[#6B7280] dark:text-gray-400 flex items-center gap-1.5 mb-1.5">
+                        <span class="inline-block text-[#3B82F6] font-semibold bg-[#EFF6FF] px-2 py-0.5 rounded-full w-fit uppercase">
+                          {post.data.tags?.[0] || 'News'}
+                        </span>
+                        <span>&bull;</span>
+                        <span>{post.data.publishedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
+                      <a href={`/blog/${post.id}`}>
+                        <h3 class="text-lg font-bold text-[#111827] dark:text-white leading-snug hover:text-[#3B82F6] transition-colors line-clamp-2">
+                          {post.data.title}
+                        </h3>
+                      </a>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : (
+        <div class="text-center py-16 bg-surface rounded-3xl border border-border">
+          <Icon name="lucide:calendar-clock" class="w-16 h-16 text-text-muted mx-auto mb-4 opacity-50" />
+          <h2 class="text-2xl font-bold text-text mb-2">No Archived News Yet</h2>
+          <p class="text-text-muted mb-6">There are currently no "News" articles older than 3 months.</p>
+        </div>
+      )}
+
+    </div>
+  </section>
+</MarketingLayout>

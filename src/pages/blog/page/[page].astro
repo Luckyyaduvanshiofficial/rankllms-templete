@@ -4,7 +4,8 @@ import Pagination from '@ui/Pagination.astro';
 import { Icon } from 'astro-icon/components';
 import { getCollection, type CollectionEntry } from 'astro:content';
 import { siteConfig } from '@/config';
-import { calculateReadingTime } from '@/lib/utils';
+import { calculateReadingTime, slugifyTag } from '@/lib/utils';
+import OptimizedImage from '@components/common/OptimizedImage.astro';
 
 const POSTS_PER_PAGE = 6;
 
@@ -41,7 +42,9 @@ if (currentPage === 1) {
 
 // Get all unique tags
 const allTags = [
-  ...new Set(posts.flatMap((post: CollectionEntry<'blog'>) => post.data.tags)),
+  ...new Set<string>(
+    posts.flatMap((post: CollectionEntry<'blog'>) => post.data.tags as string[]) as string[]
+  ),
 ].sort();
 
 // Helper to get typed tags
@@ -75,7 +78,7 @@ const getTypedTags = (tags: string[]) => tags.slice(0, 3);
               </a>
               {allTags.map((tag) => (
                 <a
-                  href={`/blog/tag/${tag}`}
+                  href={`/blog/tag/${slugifyTag(tag)}`}
                   class="px-3 py-1.5 text-sm font-medium rounded-full bg-surface text-text-muted hover:bg-primary/10 hover:text-primary transition-colors"
                 >
                   {tag}
@@ -95,10 +98,13 @@ const getTypedTags = (tags: string[]) => tags.slice(0, 3);
                 <div class="flex flex-col sm:flex-row gap-6">
                   <div class="sm:w-48 sm:h-32 shrink-0 rounded-lg overflow-hidden bg-surface">
                     {post.data.image ? (
-                      <img
+                      <OptimizedImage
                         src={post.data.image}
                         alt={post.data.title}
+                        width={1200}
+                        height={800}
                         class="w-full h-32 sm:h-full object-cover"
+                        loading="lazy"
                       />
                     ) : (
                       <div class="w-full h-32 sm:h-full bg-primary/10 flex items-center justify-center">
