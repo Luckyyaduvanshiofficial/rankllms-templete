@@ -1,33 +1,9 @@
 ---
 /**
  * Newsletter - Reusable newsletter subscription section
- *
- * @description
- * A standalone newsletter subscription component that can be placed anywhere
- * on the site. Includes email input, submit button, and configurable messaging.
- * Runs in demo mode by default - integrate with your newsletter service.
- *
- * @example Default (uses config values)
- * ```astro
- * <Newsletter />
- * ```
- *
- * @example Custom content
- * ```astro
- * <Newsletter
- *   title="Join our community"
- *   description="Get weekly tips and updates."
- *   buttonText="Join Now"
- *   variant="compact"
- * />
- * ```
- *
- * @example With custom action endpoint
- * ```astro
- * <Newsletter action="https://api.example.com/subscribe" />
- * ```
  */
 import { siteConfig } from '@/config';
+import { Icon } from 'astro-icon/components';
 
 interface Props {
   /** Section title */
@@ -49,7 +25,7 @@ interface Props {
   /** Visual variant */
   variant?: 'default' | 'compact' | 'card';
   /** Section background style */
-  background?: 'default' | 'muted' | 'accent';
+  background?: 'default' | 'muted' | 'accent' | 'none';
 }
 
 const { newsletter } = siteConfig.content;
@@ -67,65 +43,82 @@ const {
   background = 'muted',
 } = Astro.props;
 
-// Generate unique ID for this instance
 const formId = `newsletter-form-${Math.random().toString(36).substring(2, 11)}`;
 
-// Background classes
 const bgClass = {
   default: 'bg-background',
-  muted: 'bg-surface',
+  muted: 'bg-surface/50',
   accent: 'bg-primary/5',
+  none: '',
 }[background];
 
-// Variant-specific classes
 const variantClasses = {
-  default: 'py-12',
-  compact: 'py-8',
-  card: 'py-8 rounded-lg border border-border',
+  default: 'py-16 sm:py-24',
+  compact: 'py-10',
+  card: 'py-10 px-6 rounded-3xl border border-border/50 bg-surface/30 backdrop-blur-sm',
 };
 ---
 
-<section class:list={[bgClass, variantClasses[variant]]}>
-  <div
-    class:list={['max-w-7xl mx-auto px-4 sm:px-6 lg:px-8', variant === 'card' && 'px-6 sm:px-8']}
-  >
-    <div class="max-w-2xl mx-auto text-center">
-      <h3 class="text-xl font-semibold text-text">{title}</h3>
-      <p class="mt-2 text-sm text-text-muted">
-        {description}
-      </p>
-      <form
-        id={formId}
-        action={action}
-        method="POST"
-        class="newsletter-form mt-6 flex flex-col sm:flex-row gap-3 max-w-md mx-auto"
-        data-success-message={successMessage}
-        data-error-message={errorMessage}
-      >
-        <label for={`${formId}-email`} class="sr-only">Email address</label>
-        <input
-          type="email"
-          id={`${formId}-email`}
-          name="email"
-          required
-          placeholder={placeholder}
-          class="flex-1 px-4 py-2.5 text-sm rounded-md border border-border bg-background text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-        />
-        <button
-          type="submit"
-          class="px-6 py-2.5 text-sm cursor-pointer font-medium rounded-md bg-primary text-white hover:bg-primary-dark transition-colors focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed"
+<section class:list={[bgClass, variant !== 'card' && variantClasses[variant]]}>
+  <div class:list={['max-w-7xl mx-auto px-4 sm:px-6 lg:px-8', variant === 'card' && variantClasses[variant]]}>
+    <div class="relative overflow-hidden">
+      <div class="relative max-w-2xl mx-auto text-center">
+        <div class="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 text-primary mb-6">
+          <Icon name="lucide:mail" class="w-6 h-6" />
+        </div>
+        
+        <h3 class="text-2xl sm:text-3xl font-semibold text-text tracking-tight">
+          {title}
+        </h3>
+        <p class="mt-4 text-base text-text-muted leading-relaxed">
+          {description}
+        </p>
+
+        <form
+          id={formId}
+          action={action}
+          method="POST"
+          class="newsletter-form mt-10 flex flex-col sm:flex-row gap-3 max-w-lg mx-auto"
+          data-success-message={successMessage}
+          data-error-message={errorMessage}
         >
-          {buttonText}
-        </button>
-      </form>
-      <p class="newsletter-message mt-3 text-sm hidden" data-form={formId}></p>
-      {privacyNote && <p class="mt-4 text-xs text-text-muted">{privacyNote}</p>}
+          <div class="relative flex-1 group">
+            <Icon 
+              name="lucide:at-sign" 
+              class="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-text-muted group-focus-within:text-primary transition-colors" 
+            />
+            <input
+              type="email"
+              id={`${formId}-email`}
+              name="email"
+              required
+              placeholder={placeholder}
+              class="w-full pl-11 pr-4 py-3 text-sm rounded-xl border border-border bg-background/50 text-text placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+            />
+          </div>
+          <button
+            type="submit"
+            class="px-8 py-3 text-sm font-semibold rounded-xl bg-text text-background hover:opacity-90 transition-all focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 focus:ring-offset-background disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-black/5"
+          >
+            {buttonText}
+          </button>
+        </form>
+
+        <div class="newsletter-message-container mt-4 min-h-[20px]">
+          <p class="newsletter-message text-sm hidden font-medium" data-form={formId}></p>
+        </div>
+
+        {privacyNote && (
+          <p class="mt-4 text-xs text-text-muted/80">
+            {privacyNote}
+          </p>
+        )}
+      </div>
     </div>
   </div>
 </section>
 
 <script>
-  // Handle all newsletter forms on the page
   document.querySelectorAll('.newsletter-form').forEach((form) => {
     const formEl = form as HTMLFormElement;
     const formId = formEl.id;
@@ -135,7 +128,6 @@ const variantClasses = {
     const emailInput = formEl.querySelector('input[type="email"]') as HTMLInputElement;
     const submitBtn = formEl.querySelector('button[type="submit"]') as HTMLButtonElement;
 
-    // Get configurable messages from data attributes
     const successMessage = formEl.dataset.successMessage || 'Thanks for subscribing!';
     const errorMessage = formEl.dataset.errorMessage || 'Something went wrong. Please try again.';
 
@@ -147,35 +139,36 @@ const variantClasses = {
 
       const originalText = submitBtn.textContent;
       submitBtn.disabled = true;
-      submitBtn.textContent = 'Subscribing...';
+      submitBtn.textContent = 'Joining...';
 
       try {
         const action = formEl.action;
 
-        // If no action URL or same page, simulate success (demo mode)
         if (!action || action === window.location.href) {
           await new Promise((resolve) => setTimeout(resolve, 1000));
         } else {
-          // Submit to actual endpoint
           const response = await fetch(action, {
             method: 'POST',
             body: new FormData(formEl),
-            headers: {
-              Accept: 'application/json',
-            },
+            headers: { Accept: 'application/json' },
           });
 
-          if (!response.ok) {
-            throw new Error('Subscription failed');
-          }
+          if (!response.ok) throw new Error('Subscription failed');
         }
 
         messageEl.textContent = successMessage;
-        messageEl.className = 'newsletter-message mt-3 text-sm text-green-600 dark:text-green-400';
+        messageEl.className = 'newsletter-message text-sm text-emerald-600 dark:text-emerald-400 font-medium';
+        messageEl.classList.remove('hidden');
         emailInput.value = '';
+        
+        setTimeout(() => {
+          messageEl.classList.add('hidden');
+        }, 5000);
+
       } catch {
         messageEl.textContent = errorMessage;
-        messageEl.className = 'newsletter-message mt-3 text-sm text-red-600 dark:text-red-400';
+        messageEl.className = 'newsletter-message text-sm text-red-600 dark:text-red-400 font-medium';
+        messageEl.classList.remove('hidden');
       } finally {
         submitBtn.disabled = false;
         submitBtn.textContent = originalText;
@@ -183,3 +176,4 @@ const variantClasses = {
     });
   });
 </script>
+

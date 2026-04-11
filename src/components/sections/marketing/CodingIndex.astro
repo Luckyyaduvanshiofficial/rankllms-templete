@@ -1,0 +1,133 @@
+---
+/**
+ * CodingIndex - A section highlighting the best models for coding and software engineering.
+ */
+import { Icon } from 'astro-icon/components';
+import leaderboardData from '@/data/ai_models_leaderboard.json';
+
+const codingModels = leaderboardData.models
+  .filter(m => m.codeArena !== null || m.sweBench !== null)
+  .sort((a, b) => (b.codeArena || 0) - (a.codeArena || 0))
+  .slice(0, 10);
+
+const benchmarks = [
+  { name: 'Code Arena', key: 'codeArena', description: 'Elo-based coding performance' },
+  { name: 'SWE-bench', key: 'sweBench', description: 'Real-world software engineering tasks' },
+];
+---
+
+<section class="py-16 sm:py-24 bg-background border-b border-border/50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-8 mb-12">
+      <div class="max-w-2xl">
+        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/10 text-blue-600 dark:text-blue-400 text-xs font-bold uppercase tracking-wider mb-4">
+          <Icon name="lucide:code" class="w-3.5 h-3.5" />
+          Coding Intelligence
+        </div>
+        <h2 class="text-3xl sm:text-4xl font-semibold text-text tracking-tight">
+          Coding Index
+        </h2>
+        <p class="text-lg text-text-muted mt-4 leading-relaxed">
+          The industry standard for evaluating LLMs on programming tasks. We blend Code Arena Elo with 
+          SWE-bench proficiency to identify the most capable engineering partners.
+        </p>
+      </div>
+      <div class="flex gap-4">
+        <a
+          href="/leaderboards/coding"
+          class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-surface border border-border text-sm font-semibold text-text hover:bg-border/30 transition-colors"
+        >
+          View Full Coding Leaderboard
+          <Icon name="lucide:arrow-right" class="w-4 h-4" />
+        </a>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+      <!-- Main Index Table -->
+      <div class="lg:col-span-8 overflow-hidden rounded-2xl border border-border/60 bg-surface/30 backdrop-blur-sm">
+        <div class="overflow-x-auto">
+          <table class="w-full text-sm text-left">
+            <thead>
+              <tr class="border-b border-border/60 bg-surface/50">
+                <th class="py-4 px-6 font-semibold text-text">Rank</th>
+                <th class="py-4 px-6 font-semibold text-text">Model</th>
+                <th class="py-4 px-6 font-semibold text-text text-right">Code Arena</th>
+                <th class="py-4 px-6 font-semibold text-text text-right">SWE-bench</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border/40">
+              {codingModels.map((model, index) => (
+                <tr class="group hover:bg-primary/5 transition-colors">
+                  <td class="py-4 px-6">
+                    <span class:list={[
+                      "inline-flex items-center justify-center w-6 h-6 rounded-md text-[11px] font-bold",
+                      index === 0 ? "bg-yellow-500/20 text-yellow-700 dark:text-yellow-400" : 
+                      index === 1 ? "bg-slate-300/30 text-slate-600 dark:text-slate-400" :
+                      index === 2 ? "bg-orange-400/20 text-orange-700 dark:text-orange-400" :
+                      "bg-surface text-text-muted"
+                    ]}>
+                      {index + 1}
+                    </span>
+                  </td>
+                  <td class="py-4 px-6">
+                    <div class="flex flex-col">
+                      <span class="font-bold text-text group-hover:text-primary transition-colors">{model.model}</span>
+                      <span class="text-[11px] text-text-muted uppercase tracking-wider">{model.company}</span>
+                    </div>
+                  </td>
+                  <td class="py-4 px-6 text-right tabular-nums font-medium text-text">
+                    {model.codeArena || '—'}
+                  </td>
+                  <td class="py-4 px-6 text-right tabular-nums font-medium text-text">
+                    {model.sweBench ? `${model.sweBench}%` : '—'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Stats / Insight Cards -->
+      <div class="lg:col-span-4 space-y-6">
+        <div class="p-6 rounded-2xl border border-border/60 bg-surface/30">
+          <h3 class="font-semibold text-text mb-4 flex items-center gap-2">
+            <Icon name="lucide:trending-up" class="w-4 h-4 text-primary" />
+            Key Insights
+          </h3>
+          <ul class="space-y-4">
+            <li class="flex gap-3">
+              <div class="mt-1 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+              <p class="text-sm text-text-muted leading-snug">
+                <span class="text-text font-medium">{codingModels[0].model}</span> currently leads with a record-breaking Code Arena score.
+              </p>
+            </li>
+            <li class="flex gap-3">
+              <div class="mt-1 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+              <p class="text-sm text-text-muted leading-snug">
+                Top tier models are now consistently crossing the <span class="text-text font-medium">80% threshold</span> on SWE-bench.
+              </p>
+            </li>
+            <li class="flex gap-3">
+              <div class="mt-1 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+              <p class="text-sm text-text-muted leading-snug">
+                Open-source models like <span class="text-text font-medium">GLM-5</span> are rapidly closing the gap with proprietary giants.
+              </p>
+            </li>
+          </ul>
+        </div>
+
+        <div class="p-6 rounded-2xl bg-gradient-to-br from-primary to-primary-dark text-white shadow-xl shadow-primary/20">
+          <h3 class="font-semibold mb-2">Build with the best</h3>
+          <p class="text-sm text-white/80 leading-relaxed mb-6">
+            Our API provides direct access to the latest coding index data for your internal tools.
+          </p>
+          <a href="/demo" class="inline-flex items-center justify-center w-full py-3 rounded-xl bg-white text-primary font-bold text-sm hover:bg-white/90 transition-colors">
+            Get API Access
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

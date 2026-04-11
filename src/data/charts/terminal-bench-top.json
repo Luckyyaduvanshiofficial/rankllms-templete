@@ -1,0 +1,47 @@
+{
+  "sourceFile": "manual",
+  "updatedAt": "2026-04-11T08:00:00.000Z",
+  "navigation": {
+    "href": "/leaderboards/coding",
+    "label": "Directory · Terminal-Bench"
+  },
+  "presentation": {
+    "title": "Terminal-Bench Hard",
+    "subtitle": "Performance on complex, multi-step terminal and OS tasks (Top 10).",
+    "chartType": "bar",
+    "height": 300
+  },
+  "chart": {
+    "labels": [
+      "Claude 3.5 Sonnet",
+      "GPT-4o",
+      "Gemini 1.5 Pro",
+      "Claude 3 Opus",
+      "GPT-4 Turbo",
+      "Llama 3 70B",
+      "DeepSeek V2",
+      "Qwen 2 72B",
+      "Mistral Large 2",
+      "Gemma 2 27B"
+    ],
+    "datasets": [
+      {
+        "label": "Success Rate (%)",
+        "data": [
+          45.2,
+          38.6,
+          35.1,
+          32.4,
+          30.1,
+          28.4,
+          27.6,
+          26.5,
+          25.8,
+          24.2
+        ],
+        "color": "#3b82f6"
+      }
+    ]
+  },
+  "meta": []
+}

@@ -1,0 +1,47 @@
+{
+  "sourceFile": "manual",
+  "updatedAt": "2026-04-11T08:00:00.000Z",
+  "navigation": {
+    "href": "/leaderboards/top-10",
+    "label": "Directory · MMMU-Pro"
+  },
+  "presentation": {
+    "title": "MMMU-Pro Intelligence",
+    "subtitle": "Multimodal reasoning & vision benchmarks (Top 10).",
+    "chartType": "bar",
+    "height": 300
+  },
+  "chart": {
+    "labels": [
+      "GPT-4o",
+      "Gemini 1.5 Pro",
+      "Claude 3.5 Sonnet",
+      "Claude 3 Opus",
+      "Gemini 1.5 Flash",
+      "GPT-4 Turbo",
+      "Claude 3 Sonnet",
+      "Llama 3 70B",
+      "Qwen 2 72B",
+      "Grok-1.5"
+    ],
+    "datasets": [
+      {
+        "label": "Score (%)",
+        "data": [
+          65.4,
+          62.1,
+          58.9,
+          55.4,
+          52.1,
+          50.8,
+          48.2,
+          45.6,
+          44.2,
+          42.8
+        ],
+        "color": "#ec4899"
+      }
+    ]
+  },
+  "meta": []
+}

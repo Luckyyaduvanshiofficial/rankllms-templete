@@ -9,6 +9,8 @@ import chatVsCodeByRank from '../data/charts/chat-vs-code-by-rank.json';
 import inputPriceByRank from '../data/charts/input-price-by-rank.json';
 import outputPriceByRank from '../data/charts/output-price-by-rank.json';
 import chatArenaTrendByRank from '../data/charts/chat-arena-trend-by-rank.json';
+import terminalBenchTop from '../data/charts/terminal-bench-top.json';
+import mmmuProTop from '../data/charts/mmmu-pro-top.json';
 
 export interface ChartMetaRow {
   model: string;
@@ -46,6 +48,8 @@ const toBundle = (b: unknown): ExtractedChartBundle => b as ExtractedChartBundle
 export const homeChartGrid: ExtractedChartBundle[] = [
   toBundle(chatArenaTop),
   toBundle(codeArenaTop),
+  toBundle(terminalBenchTop),
+  toBundle(mmmuProTop),
   toBundle(gpqaVsSwe),
   toBundle(inputPriceByRank),
   toBundle(outputPriceByRank),

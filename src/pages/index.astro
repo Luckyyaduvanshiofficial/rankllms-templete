@@ -2,6 +2,7 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
 import MarketingLayout from '@/layouts/MarketingLayout.astro';
 import HomeDashboard from '@sections/marketing/HomeDashboard.astro';
+import CodingIndex from '@sections/marketing/CodingIndex.astro';
 import Newsletter from '@sections/marketing/Newsletter.astro';
 import { siteConfig } from '@/config';
 import highlightsData from '@/data/highlights.json';
@@ -65,43 +66,43 @@ const highlights = highlightsData as {
 >
   <HomeDashboard highlights={highlights} bentoItems={bentoItems} latestPosts={latestPosts} />
 
-  <!-- Lavender band: CTA + newsletter (inspired by report-style footers) -->
-  <section
-    class="relative py-16 sm:py-20 bg-[oklch(0.70_0.09_292)] dark:bg-[oklch(0.22_0.06_290)] text-white overflow-hidden"
-  >
-    <div
-      class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_30%_0%,rgba(255,255,255,0.15),transparent_50%)]"
-    >
-    </div>
-    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center max-w-2xl mx-auto">
-        <h2 class="text-2xl sm:text-3xl font-semibold tracking-tight">
-          Ready to find your next AI model?
-        </h2>
-        <p class="mt-3 text-white/85 text-sm sm:text-base leading-relaxed">
-          Browse the full directory—pricing, context windows, and benchmarks in one place.
-        </p>
-        <div class="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
-          <a
-            href="/leaderboards/top-50"
-            class="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-white text-violet-950 font-semibold text-sm hover:bg-white/95 transition-colors shadow-lg shadow-black/10"
-          >
-            View all models
-          </a>
-          <a
-            href="/blog"
-            class="inline-flex items-center justify-center px-6 py-3 rounded-xl border border-white/35 text-white font-semibold text-sm hover:bg-white/10 transition-colors"
-          >
-            Read the blog
-          </a>
-        </div>
-      </div>
+  <CodingIndex />
 
-      <div
-        class="mt-14 max-w-xl mx-auto rounded-2xl bg-background text-text p-1 shadow-2xl shadow-black/20 border border-white/25"
-      >
-        <div class="rounded-xl bg-surface/80 dark:bg-surface/50 px-4 py-6 sm:px-6">
-          <Newsletter variant="compact" background="default" />
+  <!-- CTA + Newsletter: Integrated design -->
+  <section class="relative py-20 sm:py-28 bg-surface/30 dark:bg-surface/10 border-b border-border/50 overflow-hidden">
+    <div class="absolute inset-0 bg-[radial-gradient(circle_at_top_right,var(--color-primary),transparent)] opacity-[0.03] dark:opacity-[0.05]"></div>
+    
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+        <div>
+          <h2 class="text-3xl sm:text-4xl font-semibold text-text tracking-tight text-balance">
+            Ready to find your next AI model?
+          </h2>
+          <p class="mt-6 text-lg text-text-muted leading-relaxed">
+            Browse our comprehensive directory of 300+ LLMs with up-to-date pricing, 
+            context windows, and verified benchmark scores.
+          </p>
+          <div class="mt-10 flex flex-wrap gap-4">
+            <a
+              href="/leaderboards/top-50"
+              class="inline-flex items-center justify-center px-8 py-4 rounded-2xl bg-primary text-white font-bold text-sm hover:bg-primary-dark transition-all shadow-xl shadow-primary/20"
+            >
+              View all models
+            </a>
+            <a
+              href="/blog"
+              class="inline-flex items-center justify-center px-8 py-4 rounded-2xl border border-border bg-background text-text font-bold text-sm hover:bg-surface transition-all"
+            >
+              Read the blog
+            </a>
+          </div>
+        </div>
+
+        <div class="relative">
+          <div class="absolute -inset-4 bg-gradient-to-tr from-primary/10 to-transparent blur-2xl opacity-50"></div>
+          <div class="relative rounded-3xl border border-border/60 bg-background shadow-2xl shadow-black/5 overflow-hidden">
+            <Newsletter variant="compact" background="none" title="Join the newsletter" description="Get weekly analysis of new models and benchmark updates delivered to your inbox." />
+          </div>
         </div>
       </div>
     </div>

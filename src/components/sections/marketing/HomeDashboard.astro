@@ -7,6 +7,8 @@ import OptimizedImage from '@components/common/OptimizedImage.astro';
 import HomeChartCard from '@/components/charts/HomeChartCard.astro';
 import type { CollectionEntry } from 'astro:content';
 import { homeChartGrid, homeChartFullWidth } from '@/lib/chart-datasets';
+import leaderboardData from '@/data/ai_models_leaderboard.json';
+import leaderboardsData from '@/data/leaderboards.json';
 
 type Highlight = {
   id: string;
@@ -34,6 +36,11 @@ interface Props {
 }
 
 const { highlights, bentoItems, latestPosts } = Astro.props;
+
+// Calculate real metrics from data
+const totalModels = leaderboardData.models.length;
+const totalViews = leaderboardsData.length;
+const benchmarkFamilies = 12; // Composite of Chat, Code, GPQA, SWE, and 8+ sub-metrics tracked
 
 function barHeights(values: number[]): number[] {
   const max = Math.max(...values, 1);
@@ -199,7 +206,7 @@ const featuredLanes = [
         <div class="rounded-2xl border border-border/80 overflow-hidden bg-surface">
           <table class="w-full text-sm">
             <thead>
-              <tr class="border-b border-border bg-[oklch(0.97_0.01_264)] dark:bg-surface">
+              <tr class="border-b border-border bg-surface/50 dark:bg-surface">
                 <th class="text-left py-3 px-4 font-semibold text-text">Metric</th>
                 <th class="text-right py-3 px-4 font-semibold text-text">Value</th>
               </tr>
@@ -207,15 +214,15 @@ const featuredLanes = [
             <tbody class="divide-y divide-border/60">
               <tr>
                 <td class="py-3 px-4 text-text-muted">Models indexed</td>
-                <td class="py-3 px-4 text-right font-medium text-text tabular-nums">300+</td>
+                <td class="py-3 px-4 text-right font-medium text-text tabular-nums">{totalModels}</td>
               </tr>
               <tr>
                 <td class="py-3 px-4 text-text-muted">Leaderboard views</td>
-                <td class="py-3 px-4 text-right font-medium text-text tabular-nums">8</td>
+                <td class="py-3 px-4 text-right font-medium text-text tabular-nums">{totalViews}</td>
               </tr>
               <tr>
                 <td class="py-3 px-4 text-text-muted">Benchmark families</td>
-                <td class="py-3 px-4 text-right font-medium text-text tabular-nums">12+</td>
+                <td class="py-3 px-4 text-right font-medium text-text tabular-nums">{benchmarkFamilies}+</td>
               </tr>
               <tr>
                 <td class="py-3 px-4 text-text-muted">Data refresh</td>
@@ -372,7 +379,7 @@ const featuredLanes = [
               href={`/blog/${post.id}`}
               class="group flex flex-col rounded-xl border border-border/80 bg-surface/50 overflow-hidden hover:border-primary/20 hover:shadow-md transition-all"
             >
-              <div class="h-40 bg-[oklch(0.96_0.01_264)] dark:bg-surface relative overflow-hidden">
+              <div class="h-40 bg-surface dark:bg-surface relative overflow-hidden">
                 {post.data.image ? (
                   <OptimizedImage
                     src={post.data.image}
