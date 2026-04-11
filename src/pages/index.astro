@@ -1,15 +1,10 @@
 ---
 import { getCollection, type CollectionEntry } from 'astro:content';
 import MarketingLayout from '@/layouts/MarketingLayout.astro';
-import Hero from '@sections/marketing/Hero.astro';
-import LogoCloud from '@sections/marketing/LogoCloud.astro';
-import HowItWorks from '@sections/marketing/HowItWorks.astro';
-import BentoGrid from '@sections/marketing/BentoGrid.astro';
-import CTA from '@sections/marketing/CTA.astro';
+import HomeDashboard from '@sections/marketing/HomeDashboard.astro';
 import Newsletter from '@sections/marketing/Newsletter.astro';
 import { siteConfig } from '@/config';
-import { Icon } from 'astro-icon/components';
-import OptimizedImage from '@components/common/OptimizedImage.astro';
+import highlightsData from '@/data/highlights.json';
 
 type BlogPost = CollectionEntry<'blog'>;
 
@@ -52,147 +47,63 @@ const bentoItems = [
     href: '/leaderboards/offline',
   },
 ];
+
+const highlights = highlightsData as {
+  id: string;
+  title: string;
+  subtitle: string;
+  colorDot: string;
+  chartColor: string;
+  labels: string[];
+  data: number[];
+}[];
 ---
 
 <MarketingLayout
   title={`${siteConfig.name} - Compare & Discover the Best AI Models`}
   description="Discover the perfect AI model for your workflow. Compare 300+ LLMs by pricing, context window, and benchmarks. Backed by deep-dive reviews and tutorials."
 >
-  <Hero
-    title="Find the Perfect AI Model for Your Exact Use Case."
-    subtitle="Compare 300+ Large Language Models by their pricing, context windows, and real-world benchmarks. Supported by expert deep-dive reviews and hands-on tutorials."
-    primaryCTA={{ label: 'Explore Leaderboards', href: '/leaderboards/top-10' }}
-    secondaryCTA={{ label: 'Read Latest Reviews', href: '/blog' }}
-  />
+  <HomeDashboard highlights={highlights} bentoItems={bentoItems} latestPosts={latestPosts} />
 
-  <LogoCloud
-    title="Tracking models from top AI labs"
-    logos={[
-      { name: 'OpenAI', src: '/images/logos/logoipsum-1.svg' },
-      { name: 'Anthropic', src: '/images/logos/logoipsum-2.svg' },
-      { name: 'Google', src: '/images/logos/logoipsum-3.svg' },
-      { name: 'Meta', src: '/images/logos/logoipsum-4.svg' },
-      { name: 'Mistral', src: '/images/logos/logoipsum-5.svg' },
-      { name: 'Cohere', src: '/images/logos/logoipsum-6.svg' },
-    ]}
-    grayscale={false}
-    logoSize="lg"
-  />
-
-  <HowItWorks
-    title="How to choose your model"
-    subtitle="Our simple methodology for finding the perfect LLM."
-    steps={[
-      {
-        title: 'Define your use case',
-        description:
-          'Identify if you need coding, creative writing, agents, or offline-capable capabilities.',
-        icon: 'lucide:target',
-      },
-      {
-        title: 'Compare Benchmarks',
-        description:
-          'Look at GPQA, MMLU, and HumanEval scores to evaluate capabilities accurately.',
-        icon: 'lucide:bar-chart-2',
-      },
-      {
-        title: 'Evaluate Cost limits',
-        description: 'Factor in input and output token pricing for your exact budget.',
-        icon: 'lucide:dollar-sign',
-      },
-    ]}
-    variant="horizontal"
-    background="muted"
-  />
-
-  <BentoGrid
-    title="Browse by Category"
-    subtitle="Jump straight to the leaderboards that matter most to your workflow."
-    items={bentoItems}
-    background="default"
-  />
-
-  {
-    latestPosts.length > 0 && (
-      <section class="py-24 bg-muted">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div class="text-center mb-16">
-            <h2 class="text-3xl sm:text-4xl font-bold text-text mb-4">Latest Insights & Reviews</h2>
-            <p class="text-lg text-text-muted max-w-2xl mx-auto">
-              Deep dives, tutorials, and benchmark analysis from our AI experts.
-            </p>
-          </div>
-
-          <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {latestPosts.map((post) => (
-              <a
-                href={`/blog/${post.id}`}
-                class="group rounded-xl border border-border bg-surface overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col"
-              >
-                <div class="h-48 overflow-hidden bg-muted relative shrink-0">
-                  {post.data.image ? (
-                    <OptimizedImage
-                      src={post.data.image}
-                      alt={post.data.title}
-                      width={1200}
-                      height={675}
-                      class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <div class="w-full h-full bg-primary/10 flex items-center justify-center">
-                      <Icon
-                        name="lucide:image"
-                        class="w-12 h-12 text-primary/40 group-hover:scale-110 transition-transform"
-                      />
-                    </div>
-                  )}
-                </div>
-                <div class="p-6 flex flex-col grow">
-                  <div class="flex items-center gap-2 text-sm text-primary font-medium mb-3">
-                    <Icon name="lucide:calendar" class="w-4 h-4" />
-                    <time datetime={post.data.publishedDate.toISOString()}>
-                      {post.data.publishedDate.toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric',
-                      })}
-                    </time>
-                  </div>
-                  <h3 class="text-xl font-bold text-text mb-2 group-hover:text-primary transition-colors line-clamp-2">
-                    {post.data.title}
-                  </h3>
-                  <p class="text-text-muted line-clamp-3 mb-4">{post.data.description}</p>
-                  <div class="flex items-center text-primary font-medium text-sm mt-auto">
-                    Read article{' '}
-                    <Icon
-                      name="lucide:arrow-right"
-                      class="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform"
-                    />
-                  </div>
-                </div>
-              </a>
-            ))}
-          </div>
-
-          <div class="mt-12 text-center">
-            <a
-              href="/blog"
-              class="inline-flex items-center justify-center px-6 py-3 rounded-lg bg-surface border border-border text-text font-medium hover:bg-muted transition-colors"
-            >
-              View all posts
-            </a>
-          </div>
+  <!-- Lavender band: CTA + newsletter (inspired by report-style footers) -->
+  <section
+    class="relative py-16 sm:py-20 bg-[oklch(0.70_0.09_292)] dark:bg-[oklch(0.22_0.06_290)] text-white overflow-hidden"
+  >
+    <div
+      class="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_30%_0%,rgba(255,255,255,0.15),transparent_50%)]"
+    >
+    </div>
+    <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-2xl mx-auto">
+        <h2 class="text-2xl sm:text-3xl font-semibold tracking-tight">
+          Ready to find your next AI model?
+        </h2>
+        <p class="mt-3 text-white/85 text-sm sm:text-base leading-relaxed">
+          Browse the full directory—pricing, context windows, and benchmarks in one place.
+        </p>
+        <div class="mt-8 flex flex-col sm:flex-row gap-3 justify-center">
+          <a
+            href="/leaderboards/top-50"
+            class="inline-flex items-center justify-center px-6 py-3 rounded-xl bg-white text-violet-950 font-semibold text-sm hover:bg-white/95 transition-colors shadow-lg shadow-black/10"
+          >
+            View all models
+          </a>
+          <a
+            href="/blog"
+            class="inline-flex items-center justify-center px-6 py-3 rounded-xl border border-white/35 text-white font-semibold text-sm hover:bg-white/10 transition-colors"
+          >
+            Read the blog
+          </a>
         </div>
-      </section>
-    )
-  }
+      </div>
 
-  <CTA
-    title="Ready to find your next AI model?"
-    description="Browse our comprehensive database of over 300 Large Language Models."
-    action={{ label: 'View All Models', href: '/leaderboards/top-50' }}
-  />
-
-  <Newsletter />
+      <div
+        class="mt-14 max-w-xl mx-auto rounded-2xl bg-background text-text p-1 shadow-2xl shadow-black/20 border border-white/25"
+      >
+        <div class="rounded-xl bg-surface/80 dark:bg-surface/50 px-4 py-6 sm:px-6">
+          <Newsletter variant="compact" background="default" />
+        </div>
+      </div>
+    </div>
+  </section>
 </MarketingLayout>

@@ -1,0 +1,14 @@
+{
+  "sourceFile": "ai_models_leaderboard.json",
+  "updatedAt": "2026-04-11T07:35:24.682Z",
+  "description": "Auto-generated chart datasets. Regenerate after editing ai_models_leaderboard.json.",
+  "charts": [
+    "chat-arena-top.json",
+    "code-arena-top.json",
+    "gpqa-vs-swe.json",
+    "chat-vs-code-by-rank.json",
+    "input-price-by-rank.json",
+    "output-price-by-rank.json",
+    "chat-arena-trend-by-rank.json"
+  ]
+}

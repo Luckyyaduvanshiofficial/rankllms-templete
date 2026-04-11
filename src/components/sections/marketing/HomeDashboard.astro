@@ -1,0 +1,468 @@
+---
+/**
+ * Dashboard-inspired home layout: metrics, featured bands, grids.
+ */
+import { Icon } from 'astro-icon/components';
+import OptimizedImage from '@components/common/OptimizedImage.astro';
+import HomeChartCard from '@/components/charts/HomeChartCard.astro';
+import type { CollectionEntry } from 'astro:content';
+import { homeChartGrid, homeChartFullWidth } from '@/lib/chart-datasets';
+
+type Highlight = {
+  id: string;
+  title: string;
+  subtitle: string;
+  colorDot: string;
+  chartColor: string;
+  labels: string[];
+  data: number[];
+};
+
+type BentoItem = {
+  title: string;
+  description: string;
+  icon: string;
+  size?: 'large' | 'medium' | 'small';
+  accent: 'primary' | 'blue' | 'green' | 'purple';
+  href: string;
+};
+
+interface Props {
+  highlights: Highlight[];
+  bentoItems: BentoItem[];
+  latestPosts: CollectionEntry<'blog'>[];
+}
+
+const { highlights, bentoItems, latestPosts } = Astro.props;
+
+function barHeights(values: number[]): number[] {
+  const max = Math.max(...values, 1);
+  return values.map((v) => Math.round((v / max) * 100));
+}
+
+const featuredLanes = [
+  {
+    href: '/leaderboards/top-10',
+    label: 'Intelligence leaders',
+    title: 'Top models by composite score',
+    sub: 'Arena-style rankings + benchmark blends',
+    class:
+      'from-[oklch(0.32_0.12_290)] to-[oklch(0.28_0.14_300)] bg-gradient-to-br',
+  },
+  {
+    href: '/leaderboards/coding',
+    label: 'Engineering',
+    title: 'Best models for coding & agents',
+    sub: 'SWE-bench, HumanEval, and tool-use signals',
+    class: 'from-[oklch(0.45_0.22_330)] to-[oklch(0.38_0.2_320)] bg-gradient-to-br',
+  },
+  {
+    href: '/blog',
+    label: 'Analysis',
+    title: 'Reviews, guides & benchmark notes',
+    sub: 'How we read the charts and pick winners',
+    class: 'from-[oklch(0.52_0.18_275)] to-[oklch(0.42_0.2_265)] bg-gradient-to-br',
+  },
+] as const;
+---
+
+<div class="bg-[oklch(0.995_0.002_264)] dark:bg-background border-b border-border/60">
+  <!-- Top bar: breadcrumb + quick search -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <nav class="flex items-center gap-2 text-xs font-medium text-text-muted uppercase tracking-wider">
+      <a href="/" class="hover:text-text transition-colors">Home</a>
+      <Icon name="lucide:chevron-right" class="w-3.5 h-3.5 opacity-50" />
+      <span class="text-text">Overview</span>
+    </nav>
+    <div class="flex items-center gap-3">
+      <a
+        href="/blog"
+        class="flex items-center gap-2 pl-3 pr-4 py-2 rounded-lg border border-border/80 bg-background text-sm text-text-muted hover:border-primary/30 hover:text-text transition-colors max-w-xs w-full sm:w-72"
+      >
+        <Icon name="lucide:search" class="w-4 h-4 shrink-0 opacity-60" />
+        <span class="truncate">Search insights & tutorials…</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Title -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-10 pt-2">
+    <h1
+      class="text-3xl sm:text-4xl lg:text-[2.75rem] font-semibold text-text tracking-tight text-balance"
+    >
+      Model intelligence overview
+    </h1>
+    <p class="mt-3 text-base sm:text-lg text-text-muted max-w-3xl leading-relaxed">
+      A clean, data-first view of how frontier LLMs stack up—benchmarks, economics, and context—so
+      you can pick the right model without the noise.
+    </p>
+    <div class="mt-8 flex flex-wrap gap-3">
+      <a
+        href="/leaderboards/top-10"
+        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-text text-background text-sm font-semibold hover:opacity-90 transition-opacity"
+      >
+        Open leaderboards
+        <Icon name="lucide:arrow-right" class="w-4 h-4" />
+      </a>
+      <a
+        href="/pricing"
+        class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg border border-border bg-background text-sm font-semibold text-text hover:bg-surface transition-colors"
+      >
+        Compare pricing
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Quick metrics: mini bar groups -->
+<section class="py-10 sm:py-12 border-b border-border/50 bg-background">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-8 lg:gap-10">
+      {
+        highlights.slice(0, 3).map((h) => {
+          const heights = barHeights(h.data.slice(0, 8));
+          return (
+            <div class="rounded-2xl border border-border/70 bg-surface/80 p-6 shadow-[0_1px_0_rgba(0,0,0,0.04)] dark:shadow-none dark:bg-surface/40">
+              <div class="flex items-center justify-between gap-3 mb-4">
+                <div>
+                  <p class="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                    {h.title}
+                  </p>
+                  <p class="text-[11px] text-text-muted/80 mt-0.5">{h.subtitle}</p>
+                </div>
+                <span class:list={['w-2.5 h-2.5 rounded-full shrink-0', h.colorDot]} />
+              </div>
+              <div class="flex items-end justify-between gap-1 h-24 px-1">
+                {heights.map((pct, i) => (
+                  <div
+                    class="flex-1 min-w-0 rounded-t-sm transition-all hover:opacity-80"
+                    style={`height: ${Math.max(pct, 8)}%; background-color: ${h.chartColor}; opacity: ${0.35 + (i / heights.length) * 0.45}`}
+                    title={h.labels[i] ?? ''}
+                  />
+                ))}
+              </div>
+              <p class="mt-4 text-xs text-text-muted line-clamp-1">
+                Top: {h.labels[0] ?? '—'}
+              </p>
+            </div>
+          );
+        })
+      }
+    </div>
+  </div>
+</section>
+
+<!-- Featured bands -->
+<section class="py-10 sm:py-12 bg-[oklch(0.99_0.005_264)] dark:bg-background border-b border-border/50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-4">
+    <div class="flex items-end justify-between gap-4 mb-2">
+      <h2 class="text-lg font-semibold text-text">Featured views</h2>
+      <span class="text-xs font-medium text-text-muted hidden sm:inline">Jump in</span>
+    </div>
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      {
+        featuredLanes.map((lane) => (
+          <a
+            href={lane.href}
+            class:list={[
+              lane.class,
+              'group relative overflow-hidden rounded-2xl p-6 sm:p-8 text-white min-h-[160px] flex flex-col justify-between shadow-lg shadow-black/10',
+            ]}
+          >
+            <div class="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(255,255,255,0.12),transparent_55%)] pointer-events-none" />
+            <div class="relative">
+              <span class="text-[10px] font-bold uppercase tracking-widest text-white/70">
+                {lane.label}
+              </span>
+              <h3 class="mt-2 text-xl font-semibold leading-snug group-hover:underline decoration-white/40 underline-offset-4">
+                {lane.title}
+              </h3>
+            </div>
+            <p class="relative text-sm text-white/85 leading-relaxed max-w-[95%]">{lane.sub}</p>
+            <Icon
+              name="lucide:arrow-up-right"
+              class="absolute top-5 right-5 w-5 h-5 text-white/60 group-hover:text-white transition-colors"
+            />
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<!-- Snapshot table + extended chart -->
+<section class="py-12 sm:py-16 bg-background border-b border-border/50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="text-lg font-semibold text-text mb-8">Snapshot</h2>
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-12">
+      <div class="lg:col-span-4">
+        <div class="rounded-2xl border border-border/80 overflow-hidden bg-surface">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="border-b border-border bg-[oklch(0.97_0.01_264)] dark:bg-surface">
+                <th class="text-left py-3 px-4 font-semibold text-text">Metric</th>
+                <th class="text-right py-3 px-4 font-semibold text-text">Value</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-border/60">
+              <tr>
+                <td class="py-3 px-4 text-text-muted">Models indexed</td>
+                <td class="py-3 px-4 text-right font-medium text-text tabular-nums">300+</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 text-text-muted">Leaderboard views</td>
+                <td class="py-3 px-4 text-right font-medium text-text tabular-nums">8</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 text-text-muted">Benchmark families</td>
+                <td class="py-3 px-4 text-right font-medium text-text tabular-nums">12+</td>
+              </tr>
+              <tr>
+                <td class="py-3 px-4 text-text-muted">Data refresh</td>
+                <td class="py-3 px-4 text-right font-medium text-text">Weekly</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="lg:col-span-8">
+        <div class="rounded-2xl border border-border/80 bg-surface p-6 sm:p-8 h-full">
+          <div class="flex flex-wrap items-start justify-between gap-4 mb-6">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-wide text-text-muted">
+                {highlights[0]?.title ?? 'Intelligence'}
+              </p>
+              <p class="text-sm text-text-muted mt-1">{highlights[0]?.subtitle ?? ''}</p>
+            </div>
+            <a
+              href="/leaderboards/top-10"
+              class="text-xs font-semibold text-primary hover:underline inline-flex items-center gap-1"
+            >
+              Full leaderboard
+              <Icon name="lucide:external-link" class="w-3.5 h-3.5" />
+            </a>
+          </div>
+          {
+            highlights[0]?.data?.length ? (
+              <div class="flex items-stretch justify-between gap-1.5 sm:gap-3 h-52 sm:h-64">
+                {highlights[0].data.map((v, i) => {
+                  const max = Math.max(...highlights[0].data, 1);
+                  const pct = Math.round((v / max) * 100);
+                  const label = highlights[0].labels[i] ?? '';
+                  const shortLabel = label.split(' ').slice(0, 2).join(' ');
+                  return (
+                    <div class="flex-1 flex flex-col min-w-0 max-w-none">
+                      <div class="flex-1 flex flex-col justify-end min-h-0">
+                        <div
+                          class="w-full max-w-[2.75rem] sm:max-w-[3.25rem] mx-auto rounded-t-md bg-gradient-to-t from-primary/25 to-primary/75 dark:from-primary/35 dark:to-primary/85 transition-transform hover:scale-[1.02] origin-bottom"
+                          style={`height: ${Math.max(pct, 10)}%; min-height: 12px`}
+                          title={`${label}: ${v}`}
+                        />
+                      </div>
+                      <span class="text-[9px] sm:text-[10px] text-text-muted text-center line-clamp-2 leading-tight px-0.5 mt-2 h-8 flex items-start justify-center">
+                        {shortLabel}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              <p class="text-sm text-text-muted py-12 text-center">Add highlights data to show the chart.</p>
+            )
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Interactive charts: Chart.js + extracted JSON from ai_models_leaderboard.json -->
+<section class="py-12 sm:py-20 bg-[oklch(0.995_0.004_264)] dark:bg-background border-b border-border/50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex flex-col lg:flex-row lg:items-end justify-between gap-6 mb-12">
+      <div class="max-w-2xl">
+        <p class="text-[11px] font-bold uppercase tracking-[0.2em] text-primary mb-2">
+          Directory data
+        </p>
+        <h2 class="text-2xl sm:text-3xl font-semibold text-text tracking-tight">
+          Benchmark charts
+        </h2>
+        <p class="text-sm text-text-muted mt-3 leading-relaxed">
+          Each visualization reads a dedicated file in{' '}
+          <code class="text-[11px] px-1.5 py-0.5 rounded-md bg-surface border border-border/70">src/data/charts/</code>{' '}
+          generated from{' '}
+          <code class="text-[11px] px-1.5 py-0.5 rounded-md bg-surface border border-border/70">ai_models_leaderboard.json</code>.
+          Hover any bar or point for company, rank, and related metrics. Regenerate slices with{' '}
+          <code class="text-[11px] px-1.5 py-0.5 rounded-md bg-surface border border-border/70">npm run extract-charts</code>.
+        </p>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+      {homeChartGrid.map((bundle) => <HomeChartCard bundle={bundle} />)}
+    </div>
+
+    <div class="mt-8 lg:mt-10 space-y-8">
+      {homeChartFullWidth.map((bundle) => <HomeChartCard bundle={bundle} />)}
+    </div>
+  </div>
+</section>
+
+<!-- Categories grid -->
+<section class="py-12 sm:py-16 bg-[oklch(0.995_0.002_264)] dark:bg-background border-b border-border/50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+      <div>
+        <h2 class="text-xl font-semibold text-text">Browse by category</h2>
+        <p class="text-sm text-text-muted mt-1 max-w-xl">
+          Same leaderboards as before—organized like a report so you can scan faster.
+        </p>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {
+        bentoItems.map((item) => (
+          <a
+            href={item.href}
+            class="group rounded-xl border border-border/80 bg-background p-5 hover:border-primary/25 hover:shadow-md transition-all flex flex-col min-h-[140px]"
+          >
+            <div class="flex items-center justify-between gap-2 mb-3">
+              <span class="inline-flex h-10 w-10 items-center justify-center rounded-lg bg-surface border border-border/60 text-primary group-hover:bg-primary/5 transition-colors">
+                <Icon name={item.icon} class="w-5 h-5" />
+              </span>
+              <Icon
+                name="lucide:arrow-right"
+                class="w-4 h-4 text-text-muted opacity-0 group-hover:opacity-100 transition-opacity"
+              />
+            </div>
+            <h3 class="font-semibold text-text group-hover:text-primary transition-colors">
+              {item.title}
+            </h3>
+            <p class="text-sm text-text-muted mt-2 leading-relaxed line-clamp-3 flex-1">
+              {item.description}
+            </p>
+          </a>
+        ))
+      }
+    </div>
+  </div>
+</section>
+
+<!-- Latest posts -->
+{
+  latestPosts.length > 0 && (
+    <section class="py-12 sm:py-16 bg-background border-b border-border/50">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
+          <div>
+            <h2 class="text-xl font-semibold text-text">Latest insights</h2>
+            <p class="text-sm text-text-muted mt-1">Reviews, tutorials, and benchmark commentary.</p>
+          </div>
+          <a
+            href="/blog"
+            class="text-sm font-semibold text-primary hover:underline inline-flex items-center gap-1"
+          >
+            View all
+            <Icon name="lucide:arrow-right" class="w-4 h-4" />
+          </a>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {latestPosts.map((post) => (
+            <a
+              href={`/blog/${post.id}`}
+              class="group flex flex-col rounded-xl border border-border/80 bg-surface/50 overflow-hidden hover:border-primary/20 hover:shadow-md transition-all"
+            >
+              <div class="h-40 bg-[oklch(0.96_0.01_264)] dark:bg-surface relative overflow-hidden">
+                {post.data.image ? (
+                  <OptimizedImage
+                    src={post.data.image}
+                    alt={post.data.title}
+                    width={800}
+                    height={450}
+                    class="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                    loading="lazy"
+                  />
+                ) : (
+                  <div class="w-full h-full flex items-center justify-center text-text-muted/40">
+                    <Icon name="lucide:file-text" class="w-10 h-10" />
+                  </div>
+                )}
+              </div>
+              <div class="p-5 flex flex-col flex-1">
+                <time
+                  class="text-[11px] font-medium uppercase tracking-wide text-text-muted"
+                  datetime={post.data.publishedDate.toISOString()}
+                >
+                  {post.data.publishedDate.toLocaleDateString('en-US', {
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })}
+                </time>
+                <h3 class="mt-2 font-semibold text-text leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+                  {post.data.title}
+                </h3>
+                <p class="text-sm text-text-muted mt-2 line-clamp-2 leading-relaxed flex-1">
+                  {post.data.description}
+                </p>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )
+}
+
+<!-- Trust strip -->
+<section class="py-10 bg-surface/60 dark:bg-surface/20 border-b border-border/50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <p class="text-center text-xs font-semibold uppercase tracking-widest text-text-muted mb-6">
+      Tracking models from leading labs
+    </p>
+    <div class="flex flex-wrap justify-center items-center gap-x-10 gap-y-6 opacity-70 grayscale hover:grayscale-0 transition-[filter] duration-300">
+      <img src="/images/logos/logoipsum-1.svg" alt="OpenAI" class="h-7 w-auto" width="120" height="28" />
+      <img src="/images/logos/logoipsum-2.svg" alt="Anthropic" class="h-7 w-auto" width="120" height="28" />
+      <img src="/images/logos/logoipsum-3.svg" alt="Google" class="h-7 w-auto" width="120" height="28" />
+      <img src="/images/logos/logoipsum-4.svg" alt="Meta" class="h-7 w-auto" width="120" height="28" />
+      <img src="/images/logos/logoipsum-5.svg" alt="Mistral" class="h-7 w-auto" width="120" height="28" />
+      <img src="/images/logos/logoipsum-6.svg" alt="Cohere" class="h-7 w-auto" width="120" height="28" />
+    </div>
+  </div>
+</section>
+
+<!-- Methodology strip -->
+<section class="py-12 sm:py-14 bg-background">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <h2 class="text-lg font-semibold text-text mb-8 text-center sm:text-left">How we compare models</h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div class="rounded-xl border border-border/70 p-6 bg-[oklch(0.995_0.002_264)] dark:bg-surface/30">
+        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 mb-4">
+          <Icon name="lucide:target" class="w-5 h-5" />
+        </div>
+        <h3 class="font-semibold text-text">Define the job</h3>
+        <p class="text-sm text-text-muted mt-2 leading-relaxed">
+          Coding, writing, agents, or on-device—start from the workload, not the hype.
+        </p>
+      </div>
+      <div class="rounded-xl border border-border/70 p-6 bg-[oklch(0.995_0.002_264)] dark:bg-surface/30">
+        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-500/10 text-violet-600 dark:text-violet-400 mb-4">
+          <Icon name="lucide:bar-chart-2" class="w-5 h-5" />
+        </div>
+        <h3 class="font-semibold text-text">Read the benchmarks</h3>
+        <p class="text-sm text-text-muted mt-2 leading-relaxed">
+          We blend public leaderboards with task-specific scores you can trace to sources.
+        </p>
+      </div>
+      <div class="rounded-xl border border-border/70 p-6 bg-[oklch(0.995_0.002_264)] dark:bg-surface/30">
+        <div class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 mb-4">
+          <Icon name="lucide:dollar-sign" class="w-5 h-5" />
+        </div>
+        <h3 class="font-semibold text-text">Normalize cost</h3>
+        <p class="text-sm text-text-muted mt-2 leading-relaxed">
+          Token pricing and context windows land in the same frame so budgets stay honest.
+        </p>
+      </div>
+    </div>
+  </div>
+</section>

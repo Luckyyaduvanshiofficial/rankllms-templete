@@ -42,14 +42,29 @@ interface ChartData {
   datasets: Dataset[];
 }
 
+interface MetaRow {
+  model?: string;
+  company?: string;
+  rank?: number;
+  chatArena?: number | null;
+  codeArena?: number | null;
+  gpqa?: number | null;
+  sweBench?: number | null;
+  inputPricePerMillion?: number | null;
+  outputPricePerMillion?: number | null;
+  context?: string | null;
+}
+
 interface Props {
   type: 'line' | 'bar' | 'area';
   data: ChartData;
   height?: number;
   ariaLabel?: string;
+  /** Per-index rows for rich tooltips (e.g. from extracted chart JSON). */
+  meta?: MetaRow[];
 }
 
-const { type, data, height = 300, ariaLabel } = Astro.props;
+const { type, data, height = 300, ariaLabel, meta = [] } = Astro.props;
 
 // Generate a unique ID for this chart instance
 const chartId = `chart-${Math.random().toString(36).substring(2, 11)}`;
@@ -57,6 +72,7 @@ const chartId = `chart-${Math.random().toString(36).substring(2, 11)}`;
 // Serialize data for client-side script
 const chartData = JSON.stringify(data);
 const chartType = type === 'area' ? 'line' : type;
+const metaEncoded = encodeURIComponent(JSON.stringify(meta));
 ---
 
 <div class="chart-container" style={`height: ${height}px`}>
@@ -65,6 +81,7 @@ const chartType = type === 'area' ? 'line' : type;
     data-chart-type={chartType}
     data-chart-data={chartData}
     data-is-area={type === 'area'}
+    data-chart-meta={metaEncoded}
     role="img"
     aria-label={ariaLabel ||
       `${type} chart showing ${data.datasets.map((d) => d.label).join(', ')}`}></canvas>
@@ -137,14 +154,38 @@ const chartType = type === 'area' ? 'line' : type;
     };
   }
 
+  interface RowMeta {
+    model?: string;
+    company?: string;
+    rank?: number;
+    chatArena?: number | null;
+    codeArena?: number | null;
+    gpqa?: number | null;
+    sweBench?: number | null;
+    inputPricePerMillion?: number | null;
+    outputPricePerMillion?: number | null;
+    context?: string | null;
+  }
+
   function initializeChart(canvas: HTMLCanvasElement) {
     const chartType = canvas.dataset.chartType as 'line' | 'bar';
-    const chartData = canvas.dataset.chartData;
+    const chartDataRaw = canvas.dataset.chartData;
     const isArea = canvas.dataset.isArea === 'true';
 
-    if (!chartData) return;
+    if (!chartDataRaw) return;
 
-    const data: ChartDataInput = JSON.parse(chartData);
+    const data: ChartDataInput = JSON.parse(chartDataRaw);
+
+    let rowMeta: RowMeta[] = [];
+    try {
+      const enc = canvas.dataset.chartMeta;
+      if (enc) {
+        rowMeta = JSON.parse(decodeURIComponent(enc)) as RowMeta[];
+      }
+    } catch {
+      rowMeta = [];
+    }
+
     let chartInstance: Chart | undefined = undefined;
 
     function createChart() {
@@ -160,18 +201,24 @@ const chartType = type === 'area' ? 'line' : type;
           borderColor: color,
           backgroundColor: isArea ? hexToRgba(color, colors.isDark ? 0.3 : 0.2) : color,
           borderWidth: 2.5,
-          tension: 0.4,
+          tension: chartType === 'line' ? 0.35 : 0.4,
           fill: isArea ? true : undefined,
-          pointBackgroundColor: isArea ? (colors.isDark ? '#fff' : color) : undefined,
-          pointBorderColor: isArea ? (colors.isDark ? color : '#fff') : undefined,
-          pointBorderWidth: isArea ? 2 : undefined,
-          pointRadius: isArea ? 4 : undefined,
-          pointHoverRadius: isArea ? 6 : undefined,
-          pointHoverBackgroundColor: isArea ? color : undefined,
-          pointHoverBorderColor: isArea ? '#fff' : undefined,
-          pointHoverBorderWidth: isArea ? 3 : undefined,
-          borderRadius: chartType === 'bar' ? 4 : undefined,
+          pointBackgroundColor:
+            chartType === 'line' ? (colors.isDark ? '#fff' : color) : isArea ? (colors.isDark ? '#fff' : color) : undefined,
+          pointBorderColor:
+            chartType === 'line' ? color : isArea ? (colors.isDark ? color : '#fff') : undefined,
+          pointBorderWidth: chartType === 'line' || isArea ? 2 : undefined,
+          pointRadius: chartType === 'line' ? 4 : isArea ? 4 : undefined,
+          pointHoverRadius: chartType === 'line' ? 8 : isArea ? 6 : undefined,
+          pointHoverBackgroundColor: chartType === 'line' || isArea ? color : undefined,
+          pointHoverBorderColor: chartType === 'line' || isArea ? '#fff' : undefined,
+          pointHoverBorderWidth: chartType === 'line' || isArea ? 2 : undefined,
+          borderRadius: chartType === 'bar' ? 6 : undefined,
           borderSkipped: chartType === 'bar' ? false : undefined,
+          hoverBackgroundColor:
+            chartType === 'bar' ? hexToRgba(color, colors.isDark ? 0.88 : 0.72) : undefined,
+          hoverBorderColor: chartType === 'bar' ? color : undefined,
+          hoverBorderWidth: chartType === 'bar' ? 2 : undefined,
         };
 
         return baseDataset;
@@ -250,6 +297,14 @@ const chartType = type === 'area' ? 'line' : type;
                   family: 'system-ui, -apple-system, sans-serif',
                 },
                 callbacks: {
+                  title: function (items: TooltipItem<'line' | 'bar'>[]) {
+                    if (!items.length) return '';
+                    const i = items[0].dataIndex;
+                    const row = rowMeta[i];
+                    if (row?.model) return row.model;
+                    const lab = items[0].label;
+                    return typeof lab === 'string' ? lab : '';
+                  },
                   label: function (context: TooltipItem<'line' | 'bar'>) {
                     let label = context.dataset.label || '';
                     if (label) {
@@ -259,6 +314,25 @@ const chartType = type === 'area' ? 'line' : type;
                       label += context.parsed.y.toLocaleString();
                     }
                     return label;
+                  },
+                  afterBody: function (items: TooltipItem<'line' | 'bar'>[]) {
+                    if (!items.length) return [];
+                    const i = items[0].dataIndex;
+                    const row = rowMeta[i];
+                    if (!row) return [];
+                    const lines: string[] = [];
+                    if (row.company) lines.push(`Company · ${row.company}`);
+                    if (row.rank != null) lines.push(`Rank · #${row.rank}`);
+                    if (row.chatArena != null) lines.push(`Chat Arena · ${row.chatArena}`);
+                    if (row.codeArena != null) lines.push(`Code Arena · ${row.codeArena}`);
+                    if (row.gpqa != null) lines.push(`GPQA · ${row.gpqa}%`);
+                    if (row.sweBench != null) lines.push(`SWE-bench · ${row.sweBench}%`);
+                    if (row.inputPricePerMillion != null)
+                      lines.push(`Input price · $${row.inputPricePerMillion}/M`);
+                    if (row.outputPricePerMillion != null)
+                      lines.push(`Output price · $${row.outputPricePerMillion}/M`);
+                    if (row.context) lines.push(`Context · ${row.context}`);
+                    return lines;
                   },
                 },
               },
@@ -311,6 +385,18 @@ const chartType = type === 'area' ? 'line' : type;
             interaction: {
               intersect: false,
               mode: 'index',
+            },
+            animation: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+              ? false
+              : {
+                  duration: 880,
+                  easing: 'easeOutQuart' as const,
+                },
+            onHover: (event, elements) => {
+              const target = event.native?.target as HTMLElement | undefined;
+              if (target) {
+                target.style.cursor = elements.length > 0 ? 'crosshair' : 'default';
+              }
             },
           },
         });

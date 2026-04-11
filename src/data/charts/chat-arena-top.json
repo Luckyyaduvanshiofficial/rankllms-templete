@@ -1,0 +1,196 @@
+{
+  "sourceFile": "ai_models_leaderboard.json",
+  "updatedAt": "2026-04-11T07:35:24.682Z",
+  "navigation": {
+    "href": "/leaderboards/top-10",
+    "label": "Directory · top models"
+  },
+  "presentation": {
+    "title": "Chat Arena leaders",
+    "subtitle": "Highest conversational Elo in the dataset (top 12).",
+    "chartType": "bar",
+    "height": 300
+  },
+  "chart": {
+    "labels": [
+      "Claude Opus 4.6",
+      "Claude Opus 4.5",
+      "GLM-4.5",
+      "Grok-4 Fast Reasoning",
+      "DeepSeek-V3.2-Exp",
+      "Claude Sonnet 4.5",
+      "GPT-5 mini",
+      "Grok-4.1 Fast Non-Reaso…",
+      "Gemini 2.5 Pro",
+      "MiMo-V2-Flash",
+      "Gemini 3.1 Pro",
+      "GPT-4.1"
+    ],
+    "datasets": [
+      {
+        "label": "Chat Arena Elo",
+        "data": [
+          1476,
+          1345,
+          1342,
+          1338,
+          1300,
+          1294,
+          1253,
+          1236,
+          1230,
+          1228,
+          1222,
+          1219
+        ],
+        "color": "#8b5cf6"
+      }
+    ]
+  },
+  "meta": [
+    {
+      "model": "Claude Opus 4.6",
+      "company": "Anthropic",
+      "rank": 1,
+      "chatArena": 1476,
+      "codeArena": 1994,
+      "gpqa": 91.3,
+      "sweBench": 80.8,
+      "inputPricePerMillion": 5,
+      "outputPricePerMillion": 25,
+      "context": "1.0M"
+    },
+    {
+      "model": "Claude Opus 4.5",
+      "company": "Anthropic",
+      "rank": 5,
+      "chatArena": 1345,
+      "codeArena": 1580,
+      "gpqa": 87,
+      "sweBench": 80.9,
+      "inputPricePerMillion": 5,
+      "outputPricePerMillion": 25,
+      "context": "200K"
+    },
+    {
+      "model": "GLM-4.5",
+      "company": "Zhipu AI",
+      "rank": 46,
+      "chatArena": 1342,
+      "codeArena": 740,
+      "gpqa": 79.1,
+      "sweBench": 64.2,
+      "inputPricePerMillion": 0.4,
+      "outputPricePerMillion": 1.6,
+      "context": "131K"
+    },
+    {
+      "model": "Grok-4 Fast Reasoning",
+      "company": "xAI",
+      "rank": 61,
+      "chatArena": 1338,
+      "codeArena": 550,
+      "gpqa": null,
+      "sweBench": null,
+      "inputPricePerMillion": 0.2,
+      "outputPricePerMillion": 0.5,
+      "context": "2.0M"
+    },
+    {
+      "model": "DeepSeek-V3.2-Exp",
+      "company": "DeepSeek",
+      "rank": 43,
+      "chatArena": 1300,
+      "codeArena": 750,
+      "gpqa": 79.9,
+      "sweBench": 67.8,
+      "inputPricePerMillion": null,
+      "outputPricePerMillion": null,
+      "context": null
+    },
+    {
+      "model": "Claude Sonnet 4.5",
+      "company": "Anthropic",
+      "rank": 18,
+      "chatArena": 1294,
+      "codeArena": 1103,
+      "gpqa": 83.4,
+      "sweBench": null,
+      "inputPricePerMillion": 3,
+      "outputPricePerMillion": 15,
+      "context": "200K"
+    },
+    {
+      "model": "GPT-5 mini",
+      "company": "OpenAI",
+      "rank": 27,
+      "chatArena": 1253,
+      "codeArena": 975,
+      "gpqa": 82.3,
+      "sweBench": null,
+      "inputPricePerMillion": 0.25,
+      "outputPricePerMillion": 2,
+      "context": "400K"
+    },
+    {
+      "model": "Grok-4.1 Fast Non-Reasoning",
+      "company": "xAI",
+      "rank": 66,
+      "chatArena": 1236,
+      "codeArena": 512,
+      "gpqa": null,
+      "sweBench": null,
+      "inputPricePerMillion": 0.2,
+      "outputPricePerMillion": 0.5,
+      "context": "2.0M"
+    },
+    {
+      "model": "Gemini 2.5 Pro",
+      "company": "Google",
+      "rank": 34,
+      "chatArena": 1230,
+      "codeArena": 892,
+      "gpqa": 83,
+      "sweBench": 63.2,
+      "inputPricePerMillion": 1.25,
+      "outputPricePerMillion": 10,
+      "context": "1.0M"
+    },
+    {
+      "model": "MiMo-V2-Flash",
+      "company": "Xiaomi",
+      "rank": 40,
+      "chatArena": 1228,
+      "codeArena": 793,
+      "gpqa": 83.7,
+      "sweBench": 73.4,
+      "inputPricePerMillion": 0.1,
+      "outputPricePerMillion": 0.3,
+      "context": "256K"
+    },
+    {
+      "model": "Gemini 3.1 Pro",
+      "company": "Google",
+      "rank": 2,
+      "chatArena": 1222,
+      "codeArena": 1865,
+      "gpqa": 94.3,
+      "sweBench": 80.6,
+      "inputPricePerMillion": 2.5,
+      "outputPricePerMillion": 15,
+      "context": "1.0M"
+    },
+    {
+      "model": "GPT-4.1",
+      "company": "OpenAI",
+      "rank": 52,
+      "chatArena": 1219,
+      "codeArena": 656,
+      "gpqa": 66.3,
+      "sweBench": 54.6,
+      "inputPricePerMillion": 2,
+      "outputPricePerMillion": 8,
+      "context": "1.0M"
+    }
+  ]
+}
