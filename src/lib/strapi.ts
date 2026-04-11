@@ -1,5 +1,6 @@
 // cspell:ignore Yaduvanshi
-import { getCollection, type CollectionEntry } from 'astro:content';
+import { getCollection } from 'astro:content';
+import type { BlogEntry } from './blog';
 
 /**
  * Strapi API Client
@@ -13,7 +14,7 @@ export interface StrapiFetchOptions {
   wrappedByList?: boolean;
 }
 
-export type BlogPost = CollectionEntry<'blog'>;
+export type { BlogEntry as BlogPost } from './blog';
 
 let warnedAboutStrapiFallback = false;
 
@@ -88,12 +89,12 @@ export interface StrapiArticle {
   };
 }
 
-export async function getBlogPosts(): Promise<BlogPost[]> {
+export async function getBlogPosts(): Promise<BlogEntry[]> {
   const strapiUrl = import.meta.env.STRAPI_URL;
 
   if (!strapiUrl) {
     warnOnce('STRAPI_URL not defined. Using local blog content.');
-    return getCollection('blog', ({ data }: { data: BlogPost['data'] }) => !data.draft);
+    return getCollection('blog', ({ data }: { data: BlogEntry['data'] }) => !data.draft);
   }
 
   try {
@@ -105,26 +106,32 @@ export async function getBlogPosts(): Promise<BlogPost[]> {
     });
 
     // Map Strapi schema to Astro's expected CollectionEntry format
-    return strapiArticles.map((article: StrapiArticle) => ({
-      id: article.attributes.slug,
-      slug: article.attributes.slug,
-      collection: 'blog',
-      body: article.attributes.content,
-      data: {
-        title: article.attributes.title,
-        description: article.attributes.description,
-        publishedDate: new Date(article.attributes.publishedAt || article.attributes.createdAt),
-        author: article.attributes.author || 'Lucky Yaduvanshi',
-        image: article.attributes.image?.data?.attributes?.url,
-        tags: article.attributes.tags?.data?.map((t) => t.attributes.name) || [],
-        draft: article.attributes.draft || false,
-      },
-    })) as BlogPost[];
+    return strapiArticles
+      .filter((article) => !article.attributes.draft)
+      .map(
+        (article: StrapiArticle): BlogEntry =>
+          ({
+          id: article.attributes.slug,
+          slug: article.attributes.slug,
+          collection: 'blog',
+          body: article.attributes.content,
+          data: {
+            title: article.attributes.title,
+            description: article.attributes.description,
+            publishedDate: new Date(article.attributes.publishedAt || article.attributes.createdAt),
+            author: article.attributes.author || 'Lucky Yaduvanshi',
+            image: article.attributes.image?.data?.attributes?.url,
+            tags: article.attributes.tags?.data?.map((t) => t.attributes.name) || [],
+            draft: article.attributes.draft || false,
+          },
+          __fromStrapi: true,
+        }) as BlogEntry
+      );
   } catch (error) {
     // Fallback to local Astro markdown when Strapi isn't completely configured
     warnOnce(
       `Strapi fallback triggered. Error details: ${error instanceof Error ? error.message : error}`
     );
-    return getCollection('blog', ({ data }: { data: BlogPost['data'] }) => !data.draft);
+    return getCollection('blog', ({ data }: { data: BlogEntry['data'] }) => !data.draft);
   }
 }

@@ -1,30 +1,28 @@
 import rss from '@astrojs/rss';
-import { getCollection, type CollectionEntry } from 'astro:content';
 import { siteConfig } from '@/config';
 import type { APIContext } from 'astro';
-
-type BlogPost = CollectionEntry<'blog'>;
+import { getBlogPosts } from '@/lib/strapi';
+import { getPostsForMainFeed, type BlogEntry } from '@/lib/blog';
 
 export async function GET(context: APIContext) {
-  // Return empty feed if blog feature is disabled
   if (!siteConfig.features.blog) {
     return new Response('<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"></rss>', {
       headers: { 'Content-Type': 'application/xml' },
     });
   }
 
-  const blogPosts = await getCollection('blog', ({ data }: BlogPost) => !data.draft);
+  const allPosts = await getBlogPosts();
+  const blogPosts = getPostsForMainFeed(allPosts);
 
-  // Sort posts by date (newest first)
   const sortedPosts = blogPosts.sort(
-    (a: BlogPost, b: BlogPost) => b.data.publishedDate.valueOf() - a.data.publishedDate.valueOf()
+    (a: BlogEntry, b: BlogEntry) => b.data.publishedDate.valueOf() - a.data.publishedDate.valueOf()
   );
 
   return rss({
     title: `${siteConfig.name} Blog`,
     description: siteConfig.description,
     site: context.site ?? siteConfig.url,
-    items: sortedPosts.map((post: BlogPost) => ({
+    items: sortedPosts.map((post: BlogEntry) => ({
       title: post.data.title,
       pubDate: post.data.publishedDate,
       description: post.data.description,

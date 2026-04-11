@@ -7,6 +7,8 @@ interface ImportMetaEnv {
   readonly SITE_AUTHOR: string;
   readonly STRAPI_URL: string;
   readonly STRAPI_TOKEN: string;
+  /** Optional JSON POST endpoint for the blog newsletter form (see docs/10-blog.md). */
+  readonly PUBLIC_NEWSLETTER_SUBMIT_URL?: string;
 }
 
 interface ImportMeta {

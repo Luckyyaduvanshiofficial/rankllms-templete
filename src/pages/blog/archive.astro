@@ -1,33 +1,25 @@
 ---
 import MarketingLayout from '@/layouts/MarketingLayout.astro';
 import { Icon } from 'astro-icon/components';
-import { type CollectionEntry } from 'astro:content';
 import { getBlogPosts } from '@/lib/strapi';
-
-type BlogPost = CollectionEntry<'blog'>;
+import { getArchivedNewsPosts, type BlogEntry } from '@/lib/blog';
+import OptimizedImage from '@components/common/OptimizedImage.astro';
 
 const posts = await getBlogPosts();
-
-// Calculate date exactly 3 months ago
-const threeMonthsAgo = new Date();
-threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-
-// Only capture "News" posts that are older than 3 months
-const archivedPosts = posts.filter((post: BlogPost) => {
-  const isNews = post.data.tags?.some((tag: string) => tag.toLowerCase() === 'news');
-  const isOlderThan3Months = post.data.publishedDate < threeMonthsAgo;
-  return isNews && isOlderThan3Months;
-}).sort(
-  (a, b) => b.data.publishedDate.getTime() - a.data.publishedDate.getTime()
+const archivedPosts = getArchivedNewsPosts(posts).sort(
+  (a: BlogEntry, b: BlogEntry) =>
+    b.data.publishedDate.getTime() - a.data.publishedDate.getTime()
 );
 
-// Group posts by Year
-const groupedByYear = archivedPosts.reduce((acc, post) => {
-  const year = post.data.publishedDate.getFullYear().toString();
-  if (!acc[year]) acc[year] = [];
-  acc[year].push(post);
-  return acc;
-}, {} as Record<string, BlogPost[]>);
+const groupedByYear = archivedPosts.reduce(
+  (acc, post) => {
+    const year = post.data.publishedDate.getFullYear().toString();
+    if (!acc[year]) acc[year] = [];
+    acc[year].push(post);
+    return acc;
+  },
+  {} as Record<string, BlogEntry[]>
+);
 
 const sortedYears = Object.keys(groupedByYear).sort((a, b) => Number(b) - Number(a));
 ---
@@ -35,9 +27,8 @@ const sortedYears = Object.keys(groupedByYear).sort((a, b) => Number(b) - Number
 <MarketingLayout title="News Archive" description="Browse all older news updates from RankLLMs.">
   <section class="relative py-20 overflow-hidden bg-background min-h-screen">
     <!-- Ambient Background Mesh -->
-    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/20 blur-[120px] rounded-full pointer-events-none opacity-50"></div>     
+    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary/20 blur-[120px] rounded-full pointer-events-none opacity-50"></div>
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-
       {/* Header section */}
       <div class="text-center mb-16 space-y-4">
         <a href="/blog" class="inline-flex items-center gap-2 text-primary hover:underline text-sm font-bold uppercase tracking-wider mb-6 transition-colors hover:text-text">
@@ -59,11 +50,18 @@ const sortedYears = Object.keys(groupedByYear).sort((a, b) => Number(b) - Number
             <div class="relative">
               <h2 class="text-3xl font-extrabold text-text mb-8">{year}</h2>
               <div class="space-y-6">
-                {groupedByYear[year].map((post) => (
-                  <article class="bg-surface rounded-2xl shadow-sm border border-border/60 hover:shadow-md transition-shadow flex flex-col md:flex-row items-center h-auto md:h-32 p-3">   
+                {groupedByYear[year].map((post: BlogEntry) => (
+                  <article class="bg-surface rounded-2xl shadow-sm border border-border/60 hover:shadow-md transition-shadow flex flex-col md:flex-row items-center h-auto md:h-32 p-3">
                     <div class="w-full md:w-48 h-32 md:h-full relative bg-primary/5 rounded-xl overflow-hidden shrink-0">
                       {post.data.image ? (
-                        <img src={post.data.image} alt={post.data.title} class="w-full h-full object-cover" />
+                        <OptimizedImage
+                          src={post.data.image}
+                          alt={post.data.title}
+                          width={800}
+                          height={600}
+                          class="w-full h-full object-cover"
+                          loading="lazy"
+                        />
                       ) : (
                         <div class="w-full h-full flex items-center justify-center">
                           <Icon name="lucide:image" class="w-8 h-8 text-primary/20" />
@@ -76,7 +74,13 @@ const sortedYears = Object.keys(groupedByYear).sort((a, b) => Number(b) - Number
                           {post.data.tags?.[0] || 'News'}
                         </span>
                         <span>&bull;</span>
-                        <span>{post.data.publishedDate.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                        <span>
+                          {post.data.publishedDate.toLocaleDateString('en-US', {
+                            month: 'long',
+                            day: 'numeric',
+                            year: 'numeric',
+                          })}
+                        </span>
                       </div>
                       <a href={`/blog/${post.id}`}>
                         <h3 class="text-lg font-bold text-[#111827] dark:text-white leading-snug hover:text-[#3B82F6] transition-colors line-clamp-2">
@@ -97,7 +101,6 @@ const sortedYears = Object.keys(groupedByYear).sort((a, b) => Number(b) - Number
           <p class="text-text-muted mb-6">There are currently no "News" articles older than 3 months.</p>
         </div>
       )}
-
     </div>
   </section>
 </MarketingLayout>

@@ -1,0 +1,32 @@
+[
+  {
+    "id": "intelligence",
+    "title": "Intelligence",
+    "subtitle": "Composite score; higher is better",
+    "colorDot": "bg-purple-500",
+    "chartColor": "#8b5cf6",
+    "datasetLabel": "Score",
+    "labels": ["Gemini 3.1 Pro", "GPT-5.4", "GPT-5.3", "Claude 4.6 (O)", "Claude 4.6 (S)"],
+    "data": [57, 57, 54, 53, 52]
+  },
+  {
+    "id": "cost-efficiency",
+    "title": "Cost Efficiency",
+    "subtitle": "Score per dollar; higher is better",
+    "colorDot": "bg-amber-500",
+    "chartColor": "#f59e0b",
+    "datasetLabel": "Score",
+    "labels": ["GLM-5.1", "Qwen3.6", "MiniMax", "Kimi K2.5", "MiMo-V2"],
+    "data": [51, 50, 50, 47, 49]
+  },
+  {
+    "id": "context-window",
+    "title": "Context Window",
+    "subtitle": "Token capacity (Millions)",
+    "colorDot": "bg-blue-500",
+    "chartColor": "#3b82f6",
+    "datasetLabel": "M Tokens",
+    "labels": ["Llama 4 Scout", "Grok 4.1", "Grok 4.20", "GPT-5.4 Pro", "Gemini 3.1 Flash-Lite"],
+    "data": [10.0, 2.0, 2.0, 1.0, 1.0]
+  }
+]

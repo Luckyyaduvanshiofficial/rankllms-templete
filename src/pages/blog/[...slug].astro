@@ -3,41 +3,55 @@ import BlogLayout from '@/layouts/BlogLayout.astro';
 import { render, type CollectionEntry } from 'astro:content';
 import { calculateReadingTime } from '@/lib/utils';
 import { getBlogPosts } from '@/lib/strapi';
+import type { BlogEntry } from '@/lib/blog';
 import InlineModelCard from '@/components/mdx/InlineModelCard.astro';
 import OptimizedImage from '@components/common/OptimizedImage.astro';
 
-type BlogPost = CollectionEntry<'blog'>;
-
 export async function getStaticPaths() {
   const posts = await getBlogPosts();
-  return posts.map((post: BlogPost) => ({
+  return posts.map((post: BlogEntry) => ({
     params: { slug: post.id },
     props: { post },
   }));
 }
 
 interface Props {
-  post: BlogPost;
+  post: BlogEntry;
 }
 
 const { post } = Astro.props;
-const renderResult = post.collection ? await render(post) : null;
-const { Content, headings } = renderResult || { Content: null, headings: [] };
 
-// Get related posts based on shared tags
-const allPosts = await getBlogPosts();
+const fromStrapi = post.__fromStrapi === true;
+
+type BlogRenderResult = Awaited<ReturnType<typeof render>>;
+let Content: BlogRenderResult['Content'] | null = null;
+let headings: BlogRenderResult['headings'] = [];
+
+if (!fromStrapi) {
+  const renderResult = await render(post as CollectionEntry<'blog'>);
+  Content = renderResult.Content;
+  headings = renderResult.headings;
+}
+
+/** Strapi HTML is treated as trusted CMS output; local posts use MDX/Markdown via `render`. */
+const strapiHtml = fromStrapi && post.body ? post.body : '';
+
+const readingContent = fromStrapi ? strapiHtml.replaceAll(/<[^>]+>/g, ' ') : post.body || '';
 
 interface RelatedPostWithScore {
-  post: BlogPost;
+  post: BlogEntry;
   sharedTags: number;
 }
 
-const relatedPosts: BlogPost[] = allPosts
-  .filter((p: BlogPost) => p.id !== post.id)
+const allPosts = await getBlogPosts();
+
+const relatedPosts: BlogEntry[] = allPosts
+  .filter((p: BlogEntry) => p.id !== post.id)
   .map(
-    (p: BlogPost): RelatedPostWithScore => ({
+    (p: BlogEntry): RelatedPostWithScore => ({
       post: p,
-      sharedTags: p.data.tags.filter((tag: string) => post.data.tags.includes(tag)).length,
+      sharedTags: (p.data.tags ?? []).filter((tag: string) => (post.data.tags ?? []).includes(tag))
+        .length,
     })
   )
   .filter((p: RelatedPostWithScore) => p.sharedTags > 0)
@@ -58,15 +72,19 @@ const relatedPosts: BlogPost[] = allPosts
   author={post.data.author}
   image={post.data.image}
   tags={post.data.tags}
-  content={post.body || ''}
+  content={readingContent}
   headings={headings}
 >
   <div slot="content">
-    {Content ? (
-      <Content components={{ InlineModelCard }} />
-    ) : (
-      <div set:html={post.body} />
-    )}
+    {
+      Content ? (
+        <Content components={{ InlineModelCard }} />
+      ) : fromStrapi ? (
+        <div class="prose prose-neutral dark:prose-invert max-w-none" set:html={strapiHtml} />
+      ) : (
+        <p class="text-text-muted">This article has no content.</p>
+      )
+    }
   </div>
 
   <!-- Related Posts -->
@@ -111,7 +129,12 @@ const relatedPosts: BlogPost[] = allPosts
                       year: 'numeric',
                     })}
                     <span class="mx-2">·</span>
-                    {calculateReadingTime(relatedPost.body || '')} min read
+                    {calculateReadingTime(
+                      relatedPost.__fromStrapi
+                        ? (relatedPost.body || '').replaceAll(/<[^>]+>/g, ' ')
+                        : relatedPost.body || ''
+                    )}{' '}
+                    min read
                   </div>
                 </div>
               </article>

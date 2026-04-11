@@ -2,52 +2,57 @@
 import MarketingLayout from '@/layouts/MarketingLayout.astro';
 import Pagination from '@ui/Pagination.astro';
 import { Icon } from 'astro-icon/components';
-import { getCollection, type CollectionEntry } from 'astro:content';
 import { siteConfig } from '@/config';
 import { calculateReadingTime, slugifyTag } from '@/lib/utils';
 import OptimizedImage from '@components/common/OptimizedImage.astro';
-
-const POSTS_PER_PAGE = 6;
+import { getBlogPosts } from '@/lib/strapi';
+import { BLOG_POSTS_PER_PAGE, getPostsForMainFeed, type BlogEntry } from '@/lib/blog';
 
 export async function getStaticPaths() {
-  const postsPerPage = 6;
-  const posts = await getCollection('blog', ({ data }: CollectionEntry<'blog'>) => !data.draft);
-  const totalPages = Math.ceil(posts.length / postsPerPage);
+  const allPosts = await getBlogPosts();
+  const posts = getPostsForMainFeed(allPosts);
+  const totalPages = Math.max(1, Math.ceil(posts.length / BLOG_POSTS_PER_PAGE));
 
   return Array.from({ length: totalPages }, (_, i) => ({
     params: { page: String(i + 1) },
   }));
 }
 
-const { page } = Astro.params;
-const currentPage = parseInt(page!);
+const rawPage = Astro.params.page;
+const currentPage = parseInt(rawPage ?? '', 10);
 
-const posts = await getCollection('blog', ({ data }: CollectionEntry<'blog'>) => !data.draft);
-const sortedPosts = posts.sort(
-  (a: CollectionEntry<'blog'>, b: CollectionEntry<'blog'>) =>
+const allPosts = await getBlogPosts();
+const posts = getPostsForMainFeed(allPosts);
+const sortedPosts = [...posts].sort(
+  (a: BlogEntry, b: BlogEntry) =>
     b.data.publishedDate.getTime() - a.data.publishedDate.getTime()
 );
 
-const totalPages = Math.ceil(sortedPosts.length / POSTS_PER_PAGE);
-const startIndex = (currentPage - 1) * POSTS_PER_PAGE;
-const paginatedPosts: CollectionEntry<'blog'>[] = sortedPosts.slice(
-  startIndex,
-  startIndex + POSTS_PER_PAGE
-);
+const totalPages = Math.max(1, Math.ceil(sortedPosts.length / BLOG_POSTS_PER_PAGE));
+
+if (!Number.isFinite(currentPage) || currentPage < 1) {
+  return new Response(null, { status: 404, statusText: 'Not Found' });
+}
+
+if (currentPage > totalPages) {
+  return new Response(null, { status: 404, statusText: 'Not Found' });
+}
 
 // Redirect page 1 to /blog
 if (currentPage === 1) {
   return Astro.redirect('/blog');
 }
 
-// Get all unique tags
+const startIndex = (currentPage - 1) * BLOG_POSTS_PER_PAGE;
+const paginatedPosts: BlogEntry[] = sortedPosts.slice(
+  startIndex,
+  startIndex + BLOG_POSTS_PER_PAGE
+);
+
 const allTags = [
-  ...new Set<string>(
-    posts.flatMap((post: CollectionEntry<'blog'>) => post.data.tags as string[]) as string[]
-  ),
+  ...new Set<string>(posts.flatMap((post: BlogEntry) => post.data.tags ?? [])),
 ].sort();
 
-// Helper to get typed tags
 const getTypedTags = (tags: string[]) => tags.slice(0, 3);
 ---
 
@@ -122,7 +127,14 @@ const getTypedTags = (tags: string[]) => tags.slice(0, 3);
                         })}
                       </span>
                       <span>·</span>
-                      <span>{calculateReadingTime(post.body || '')} min read</span>
+                      <span>
+                        {calculateReadingTime(
+                          post.__fromStrapi
+                            ? (post.body || '').replaceAll(/<[^>]+>/g, ' ')
+                            : post.body || ''
+                        )}{' '}
+                        min read
+                      </span>
                     </div>
                     <h2 class="text-xl font-bold text-text group-hover:text-primary transition-colors">
                       {post.data.title}

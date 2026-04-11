@@ -1,32 +1,22 @@
 ---
 import MarketingLayout from '@/layouts/MarketingLayout.astro';
 import { Icon } from 'astro-icon/components';
-import { type CollectionEntry } from 'astro:content';
 import { getBlogPosts } from '@/lib/strapi';
 import { siteConfig } from '@/config';
 import OptimizedImage from '@components/common/OptimizedImage.astro';
 import { slugifyTag } from '@/lib/utils';
-
-type BlogPost = CollectionEntry<'blog'>;
-const POSTS_PER_PAGE = 9;
+import { BLOG_POSTS_PER_PAGE, getPostsForMainFeed, type BlogEntry } from '@/lib/blog';
 
 const allPosts = await getBlogPosts();
-
-// 3 Months Ago Target Date
-const threeMonthsAgo = new Date();
-threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-
-// Automatically remove "News" articles older than 3 months from main feed
-const posts = allPosts.filter(post => {
-  const isNews = post.data.tags?.some((tag: string) => tag.toLowerCase() === 'news');
-  const isOlderThan3Months = post.data.publishedDate < threeMonthsAgo;
-  return !(isNews && isOlderThan3Months);
-});
+const posts = getPostsForMainFeed(allPosts);
 const sortedPosts = [...posts].sort(
   (a, b) => b.data.publishedDate.getTime() - a.data.publishedDate.getTime()
 );
 
-const paginatedPosts = sortedPosts.slice(0, POSTS_PER_PAGE);
+const paginatedPosts = sortedPosts.slice(0, BLOG_POSTS_PER_PAGE);
+const hasMorePosts = sortedPosts.length > BLOG_POSTS_PER_PAGE;
+
+const newsletterSubmitUrl = import.meta.env.PUBLIC_NEWSLETTER_SUBMIT_URL ?? '';
 
 // Top 3 featured posts
 const featuredPost = paginatedPosts[0];
@@ -35,7 +25,7 @@ const gridPosts = paginatedPosts.slice(3);
 
 // Dynamic Tags with counts
 const tagCounts = posts.reduce(
-  (acc: Record<string, number>, post: BlogPost) => {
+  (acc: Record<string, number>, post: BlogEntry) => {
     post.data.tags?.forEach((tag: string) => {
       acc[tag] = (acc[tag] || 0) + 1;
     });
@@ -50,7 +40,7 @@ const sortedTags = (Object.entries(tagCounts) as [string, number][])
 
 // Authors with counts
 const authorCounts = posts.reduce(
-  (acc, post: BlogPost) => {
+  (acc, post: BlogEntry) => {
     const author = post.data.author || 'Anonymous';
     acc[author] = (acc[author] || 0) + 1;
     return acc;
@@ -248,25 +238,41 @@ const topAuthors = (Object.entries(authorCounts) as [string, number][])
         }
       </div>
 
-      {/* Browse All Button */}
+      {/* More posts (paginated list) */}
       <div class="text-center mb-24">
-        <button
-          disabled
-          class="inline-block px-8 py-3 border-2 border-border text-text font-bold rounded-lg opacity-50 cursor-not-allowed"
-          title="Already viewing all blog posts"
-        >
-          Browse all Posts
-        </button>
+        {
+          hasMorePosts ? (
+            <a
+              href="/blog/page/2"
+              class="inline-block px-8 py-3 border-2 border-border text-text font-bold rounded-lg hover:bg-primary/5 hover:border-primary/30 transition-colors"
+            >
+              More posts
+            </a>
+          ) : (
+            <a
+              href="/blog/archive"
+              class="inline-block px-8 py-3 border-2 border-border text-text font-bold rounded-lg hover:bg-primary/5 hover:border-primary/30 transition-colors"
+            >
+              News archive
+            </a>
+          )
+        }
       </div>
 
       {/* Top Authors Section */}
       {
         topAuthors.length > 0 && (
           <>
-            <div class="flex items-center justify-between mb-8 pb-4 border-b border-border/50">
+            <div
+              id="top-authors"
+              class="flex items-center justify-between mb-8 pb-4 border-b border-border/50 scroll-mt-24"
+            >
               <h2 class="text-3xl font-bold text-text">Top Authors</h2>
-              <a href="#" class="text-sm font-bold flex items-center text-text-muted hover:text-text transition-colors">
-                All Authors <Icon name="lucide:arrow-up-right" class="w-4 h-4 ml-1" />
+              <a
+                href="/blog#top-authors"
+                class="text-sm font-bold flex items-center text-text-muted hover:text-text transition-colors"
+              >
+                All authors on this page <Icon name="lucide:arrow-up-right" class="w-4 h-4 ml-1" />
               </a>
             </div>
 
@@ -306,6 +312,7 @@ const topAuthors = (Object.entries(authorCounts) as [string, number][])
           <div class="md:w-1/2 w-full max-w-md mx-auto md:mx-0">
             <form
               id="newsletter-form"
+              data-newsletter-url={newsletterSubmitUrl}
               class="flex flex-col sm:flex-row gap-3 shadow-sm bg-background p-2 rounded-xl border border-border"
             >
               <input
@@ -331,25 +338,36 @@ const topAuthors = (Object.entries(authorCounts) as [string, number][])
             ></div>
             <script>
               {
-                const form = document.getElementById('newsletter-form');
+                const form = document.getElementById('newsletter-form') as HTMLFormElement | null;
                 const statusElement = document.getElementById('newsletter-status');
                 if (form && statusElement) {
                   form.addEventListener('submit', async (e) => {
                     e.preventDefault();
                     const emailInput = form.querySelector('input[name="email"]') as HTMLInputElement;
                     const submitButton = form.querySelector('button[type="submit"]') as HTMLButtonElement;
-                    
+                    const endpoint = form.dataset.newsletterUrl?.trim() ?? '';
+
                     if (!emailInput?.value) {
                       return;
                     }
 
-                    // Clear previous status message
                     statusElement.textContent = '';
                     statusElement.className = 'mt-3 text-sm font-medium min-h-5';
 
                     try {
                       submitButton.disabled = true;
-                      const response = await fetch('/api/subscribe', {
+
+                      if (!endpoint) {
+                        await new Promise((r) => setTimeout(r, 800));
+                        emailInput.value = '';
+                        statusElement.textContent =
+                          'Thanks! Demo mode — set PUBLIC_NEWSLETTER_SUBMIT_URL to use a real endpoint.';
+                        statusElement.className =
+                          'mt-3 text-sm font-medium min-h-5 text-green-600 dark:text-green-400';
+                        return;
+                      }
+
+                      const response = await fetch(endpoint, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ email: emailInput.value }),
@@ -357,16 +375,20 @@ const topAuthors = (Object.entries(authorCounts) as [string, number][])
 
                       if (response.ok) {
                         emailInput.value = '';
-                        statusElement.textContent = 'Subscription successful! Check your email to confirm.';
-                        statusElement.className = 'mt-3 text-sm font-medium min-h-5 text-green-600 dark:text-green-400';
+                        statusElement.textContent =
+                          'Subscription successful! Check your email to confirm.';
+                        statusElement.className =
+                          'mt-3 text-sm font-medium min-h-5 text-green-600 dark:text-green-400';
                       } else {
                         statusElement.textContent = 'Subscription failed, please try again.';
-                        statusElement.className = 'mt-3 text-sm font-medium min-h-5 text-red-600 dark:text-red-400';
+                        statusElement.className =
+                          'mt-3 text-sm font-medium min-h-5 text-red-600 dark:text-red-400';
                       }
                     } catch (error) {
                       console.error('Newsletter subscription error:', error);
                       statusElement.textContent = 'Subscription failed, please try again.';
-                      statusElement.className = 'mt-3 text-sm font-medium min-h-5 text-red-600 dark:text-red-400';
+                      statusElement.className =
+                        'mt-3 text-sm font-medium min-h-5 text-red-600 dark:text-red-400';
                     } finally {
                       submitButton.disabled = false;
                     }

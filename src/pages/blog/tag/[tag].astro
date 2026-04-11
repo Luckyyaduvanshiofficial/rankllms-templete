@@ -1,29 +1,17 @@
 ---
 import MarketingLayout from '@/layouts/MarketingLayout.astro';
 import { Icon } from 'astro-icon/components';
-import { type CollectionEntry } from 'astro:content';
 import { siteConfig } from '@/config';
 import { calculateReadingTime, slugifyTag } from '@/lib/utils';
 import { getBlogPosts } from '@/lib/strapi';
+import { getPostsForMainFeed, type BlogEntry } from '@/lib/blog';
 import OptimizedImage from '@components/common/OptimizedImage.astro';
-
-type BlogPost = CollectionEntry<'blog'>;
 
 export async function getStaticPaths() {
   const allPosts = await getBlogPosts();
+  const posts = getPostsForMainFeed(allPosts);
 
-  // 3 Months Ago Target Date
-  const threeMonthsAgo = new Date();
-  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-
-  // Automatically remove "News" articles older than 3 months from main feed
-  const posts = allPosts.filter((post: BlogPost) => {
-    const isNews = post.data.tags?.some((tag: string) => tag.toLowerCase() === 'news');
-    const isOlderThan3Months = post.data.publishedDate < threeMonthsAgo;
-    return !(isNews && isOlderThan3Months);
-  });
-  
-  const allTags = [...new Set(posts.flatMap((post: BlogPost) => post.data.tags || []))];
+  const allTags = [...new Set(posts.flatMap((post: BlogEntry) => post.data.tags || []))];
 
   return allTags.map((tag: string) => ({
     params: { tag: slugifyTag(tag) },
@@ -38,28 +26,18 @@ interface Props {
 const { tag } = Astro.props;
 const tagSlug = Astro.params.tag;
 
-// Fetch and filter posts at module level for this specific tag
 const allPosts = await getBlogPosts();
+const posts = getPostsForMainFeed(allPosts);
 
-const threeMonthsAgo = new Date();
-threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
-
-const posts: BlogPost[] = allPosts.filter((post: BlogPost) => {
-  const isNews = post.data.tags?.some((postTag: string) => postTag.toLowerCase() === 'news');
-  const isOlderThan3Months = post.data.publishedDate < threeMonthsAgo;
-  return !(isNews && isOlderThan3Months);
-});
-
-const filteredPosts: BlogPost[] = posts
-  .filter((post: BlogPost) =>
+const filteredPosts: BlogEntry[] = posts
+  .filter((post: BlogEntry) =>
     post.data.tags?.some((postTag: string) => slugifyTag(postTag) === tagSlug)
   )
   .sort(
-    (a: BlogPost, b: BlogPost) => b.data.publishedDate.getTime() - a.data.publishedDate.getTime()
+    (a: BlogEntry, b: BlogEntry) => b.data.publishedDate.getTime() - a.data.publishedDate.getTime()
   );
 
-// Get all unique tags for the filter
-const allTags: string[] = [...new Set(posts.flatMap((post: BlogPost) => post.data.tags || []))].sort();
+const allTags: string[] = [...new Set(posts.flatMap((post: BlogEntry) => post.data.tags || []))].sort();
 
 const featuredPost = filteredPosts[0];
 const regularPosts = filteredPosts.slice(1);
@@ -240,7 +218,12 @@ const regularPosts = filteredPosts.slice(1);
                         </span>
                         <span class="flex items-center gap-1.5 opacity-70">
                           <Icon name="lucide:clock" class="w-3.5 h-3.5" />
-                          {calculateReadingTime(post.body || '')}m
+                          {calculateReadingTime(
+                            post.__fromStrapi
+                              ? (post.body || '').replaceAll(/<[^>]+>/g, ' ')
+                              : post.body || ''
+                          )}
+                          m
                         </span>
                       </div>
                     </div>
